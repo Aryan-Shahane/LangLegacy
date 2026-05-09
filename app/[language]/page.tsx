@@ -93,9 +93,12 @@ export default async function LanguageDictionaryPage({
   const canModerate = viewerCanModerate(viewer);
   const dictionaryTitle = header.name || `${language} Dictionary`;
   const qpTab = resolvedSearchParams?.tab?.toLowerCase();
-  const migrated = qpTab === "learning" || qpTab === "chatrooms" ? "learn" : qpTab || "dictionary";
+  const migrated = qpTab === "learning" ? "learn" : qpTab || "dictionary";
   const topBarActiveTab =
-    migrated === "learn" || migrated === "community" || migrated === "moderator"
+    migrated === "learn" ||
+    migrated === "community" ||
+    migrated === "chatrooms" ||
+    migrated === "moderator"
       ? migrated
       : "dictionary";
 

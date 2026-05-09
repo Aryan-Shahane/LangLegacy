@@ -297,7 +297,7 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          <Link href="/mi?tab=learning" className="inline-flex items-center justify-center w-full rounded-full bg-[#B24A2D] py-6 text-[13px] font-bold uppercase tracking-widest hover:bg-[#8A3620] relative z-10 transition-colors text-center">
+          <Link href="/mi?tab=learn" className="inline-flex items-center justify-center w-full rounded-full bg-[#B24A2D] py-6 text-[13px] font-bold uppercase tracking-widest hover:bg-[#8A3620] relative z-10 transition-colors text-center">
             View My Path
           </Link>
         </div>

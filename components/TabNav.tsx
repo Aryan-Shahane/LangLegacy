@@ -5,9 +5,9 @@ import { cn } from "@/lib/utils";
 
 const TABS = [
   { id: "dictionary", label: "Dictionary" },
+  { id: "learn", label: "Learn" },
   { id: "community", label: "Community" },
   { id: "chatrooms", label: "Chatrooms" },
-  { id: "learning", label: "Learning" },
 ] as const;
 
 export type LanguageTab = (typeof TABS)[number]["id"];
@@ -24,7 +24,11 @@ export default function TabNav({
       {TABS.map((tab) => (
         <Link
           key={tab.id}
-          href={`/${languageCode}?tab=${tab.id}`}
+          href={
+            tab.id === "community"
+              ? `/${languageCode}?tab=community&section=forum`
+              : `/${languageCode}?tab=${tab.id}`
+          }
           className={cn(
             "rounded-full px-4 py-1.5 text-sm font-medium transition-all",
             activeTab === tab.id ? "bg-[#D0E9D4] text-[#0B2013]" : "text-[#D0E9D4] hover:bg-[#30483A]"

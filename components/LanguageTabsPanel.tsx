@@ -1,22 +1,24 @@
 "use client";
 
-import { Suspense, useMemo } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import DictionaryClient from "@/app/[language]/DictionaryClient";
 import CommunityHub from "@/components/CommunityHub";
 import LearnSession from "@/components/LearnSession";
 import ModeratorQueue from "@/components/moderator/ModeratorQueue";
+import RoomList from "@/components/RoomList";
 import { Card } from "@/components/ui/card";
-import type { UserRole } from "@/lib/types";
+import type { Room, UserRole } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-type TabKey = "dictionary" | "learn" | "community" | "moderator";
+type TabKey = "dictionary" | "learn" | "community" | "chatrooms" | "moderator";
 
 const CORE_TABS: Array<{ key: TabKey; label: string }> = [
   { key: "dictionary", label: "Dictionary" },
   { key: "learn", label: "Learn" },
   { key: "community", label: "Community" },
+  { key: "chatrooms", label: "Chatrooms" },
 ];
 
 function tabHref(languageCode: string, tab: TabKey, communitySection: string | null) {
@@ -40,16 +42,36 @@ function LanguageTabsPanelInner({
   viewerRole: UserRole;
   canModerate: boolean;
 }) {
-  void viewerRole;
   const searchParams = useSearchParams();
   const rawTab = (searchParams.get("tab") || "dictionary").toLowerCase();
   const communitySection = searchParams.get("section");
 
-  const migratedTab = rawTab === "learning" || rawTab === "chatrooms" ? "learn" : rawTab;
+  const migratedTab = rawTab === "learning" ? "learn" : rawTab;
   let activeTab: TabKey = "dictionary";
-  if (migratedTab === "dictionary" || migratedTab === "learn" || migratedTab === "community" || migratedTab === "moderator") {
+  if (
+    migratedTab === "dictionary" ||
+    migratedTab === "learn" ||
+    migratedTab === "community" ||
+    migratedTab === "chatrooms" ||
+    migratedTab === "moderator"
+  ) {
     activeTab = migratedTab;
   }
+
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const loadRooms = useCallback(async () => {
+    const res = await fetch(`/api/rooms?language_code=${encodeURIComponent(languageCode)}`, { cache: "no-store" });
+    if (!res.ok) return;
+    setRooms((await res.json()) as Room[]);
+  }, [languageCode]);
+
+  useEffect(() => {
+    if (activeTab !== "chatrooms") return undefined;
+    const id = window.setTimeout(() => {
+      void loadRooms();
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, [activeTab, loadRooms]);
 
   const showModeratorView = activeTab === "moderator";
 
@@ -82,6 +104,28 @@ function LanguageTabsPanelInner({
       <div role="tabpanel">
         {activeTab === "dictionary" ? <DictionaryClient languageCode={languageCode} /> : null}
         {activeTab === "learn" ? <LearnSession languageCode={languageCode} /> : null}
+
+        {activeTab === "chatrooms" ? (
+          <Suspense fallback={<p className="text-sm text-[#757C76]">Opening chat circles…</p>}>
+            <RoomList
+              rooms={rooms}
+              languageCode={languageCode}
+              viewerRole={viewerRole}
+              onCreateRoom={async (name, description) => {
+                const res = await fetch("/api/rooms", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ language_code: languageCode, name, description }),
+                });
+                if (!res.ok) {
+                  const payload = (await res.json().catch(() => ({}))) as { error?: string };
+                  throw new Error(payload.error || "Failed to create room.");
+                }
+                await loadRooms();
+              }}
+            />
+          </Suspense>
+        ) : null}
 
         {activeTab === "community" ? (
           <Suspense fallback={<CommunitySuspenseFallback />}>

@@ -12,13 +12,15 @@ const LANDING_TABS = [
   { id: "dictionary", label: "Dictionary" },
   { id: "community", label: "Community" },
   { id: "learn", label: "Learn" },
+  { id: "chatrooms", label: "Chatrooms" },
 ] as const;
 
 /** Per-language hub: Dictionary opens the `{code}` archive base tabs (Moderator appended when permitted). */
 const LANGUAGE_TABS_CORE = [
   { id: "dictionary", label: "Dictionary" },
-  { id: "community", label: "Community" },
   { id: "learn", label: "Learn" },
+  { id: "community", label: "Community" },
+  { id: "chatrooms", label: "Chatrooms" },
 ] as const;
 
 type Props = {
@@ -70,8 +72,7 @@ export default function TopBar({ activeTab, languageCode, canModerate = false }:
     }
   };
 
-  const migratedActive =
-    activeTab === "learning" || activeTab === "chatrooms" ? "learn" : activeTab;
+  const migratedActive = activeTab === "learning" ? "learn" : activeTab;
 
   const tabs = languageCode
     ? [...LANGUAGE_TABS_CORE, ...(canModerate ? ([{ id: "moderator", label: "Moderator" }] as const) : [])]
