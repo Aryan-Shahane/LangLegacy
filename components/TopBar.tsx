@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import NotificationsBell from "@/components/NotificationsBell";
 import LanguageSwapDropdown from "@/components/LanguageSwapDropdown";
@@ -28,8 +28,10 @@ type Props = {
 
 export default function TopBar({ activeTab, languageCode }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
   const [loggingOut, setLoggingOut] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [canModerate, setCanModerate] = useState(false);
   const [checkedAuth, setCheckedAuth] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -39,9 +41,10 @@ export default function TopBar({ activeTab, languageCode }: Props) {
       try {
         const response = await fetch("/api/auth/me", { cache: "no-store" });
         if (!response.ok) return;
-        const payload = (await response.json()) as { authenticated?: boolean };
+        const payload = (await response.json()) as { authenticated?: boolean; can_moderate?: boolean };
         if (active) {
           setIsAuthenticated(Boolean(payload.authenticated));
+          setCanModerate(Boolean(payload.can_moderate));
         }
       } finally {
         if (active) {
@@ -61,6 +64,7 @@ export default function TopBar({ activeTab, languageCode }: Props) {
       await fetch("/api/auth/logout", { method: "POST" });
       setMenuOpen(false);
       setIsAuthenticated(false);
+      setCanModerate(false);
       router.push("/");
       router.refresh();
     } finally {
@@ -117,6 +121,19 @@ export default function TopBar({ activeTab, languageCode }: Props) {
                 </Link>
               );
             })}
+            {checkedAuth && canModerate ? (
+              <Link
+                href="/"
+                className={cn(
+                  "ml-2 border-l border-[#C3C8C1]/25 pl-3 text-sm font-medium transition-all active:scale-[0.98]",
+                  pathname === "/" || pathname === "/mod"
+                    ? "rounded-full bg-[#B4CDB8] px-4 py-1.5 text-[#0B2013]"
+                    : "rounded-full px-4 py-1.5 text-[#E8F5EA] hover:bg-[#30483A]"
+                )}
+              >
+                Dashboard
+              </Link>
+            ) : null}
           </nav>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2 md:gap-3">

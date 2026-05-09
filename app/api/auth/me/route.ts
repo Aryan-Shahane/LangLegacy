@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSessionFromCookie } from "@/lib/auth";
+import { getSessionFromCookie, viewerCanModerate } from "@/lib/auth";
 
 export async function GET() {
   try {
@@ -9,6 +9,7 @@ export async function GET() {
     }
     return NextResponse.json({
       authenticated: true,
+      can_moderate: viewerCanModerate(viewer),
       user: {
         userId: viewer.userId,
         name: viewer.name,

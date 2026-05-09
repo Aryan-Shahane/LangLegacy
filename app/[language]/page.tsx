@@ -171,7 +171,7 @@ export default async function LanguageDictionaryPage({
             </p>
             {canModerate ? (
               <p className="mt-4">
-                <Link href="/mod" className="text-xs font-semibold uppercase tracking-[0.14em] text-[#1B3022] underline">
+                <Link href="/" className="text-xs font-semibold uppercase tracking-[0.14em] text-[#1B3022] underline">
                   Moderator dashboard
                 </Link>
               </p>

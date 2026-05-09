@@ -50,7 +50,7 @@ export default function ModReportsPage() {
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#C3C8C1]/35 pb-6">
         <div className="space-y-2">
           <nav className="text-xs font-semibold uppercase tracking-[0.16em] text-[#757C76]">
-            <Link href="/mod" className="text-[#1B3022] transition hover:text-[#9F4026]">
+            <Link href="/" className="text-[#1B3022] transition hover:text-[#9F4026]">
               Overview
             </Link>
             <span className="mx-2 text-[#C3C8C1]">/</span>
@@ -80,7 +80,7 @@ export default function ModReportsPage() {
           <p className="font-serif text-xl text-[#061B0E]">Queue is empty</p>
           <p className="mx-auto mt-2 max-w-md text-sm text-[#434843]">Outstanding flags will rank here · check back later or refresh after other moderators resolve items.</p>
           <Link
-            href="/mod"
+            href="/"
             className="mt-6 inline-block text-xs font-semibold uppercase tracking-[0.14em] text-[#1B3022] underline-offset-4 hover:underline"
           >
             ← Back to dashboard
