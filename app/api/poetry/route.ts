@@ -4,6 +4,7 @@ import { findDocuments, saveDocument } from "@/lib/cloudant";
 import { requireSession } from "@/lib/auth";
 import { glossaryTranslationForLanguage } from "@/lib/dictionaryTranslate";
 import { languageIsArchiveMode } from "@/lib/languageArchive";
+import { mockPoemsForLanguage } from "@/lib/mock/poetryStoriesMockData";
 import type { Poem } from "@/lib/types";
 
 export async function GET(req: NextRequest) {
@@ -12,14 +13,23 @@ export async function GET(req: NextRequest) {
     if (!languageCode) {
       return NextResponse.json({ error: "language_code is required" }, { status: 400 });
     }
-    const docs = (await findDocuments(
-      "poetry",
-      { type: "poem", language_code: languageCode },
-      200,
-      0
-    )) as Poem[];
-    docs.sort((a, b) => b.created_at.localeCompare(a.created_at));
-    return NextResponse.json(docs);
+    let docs: Poem[] = [];
+    try {
+      docs = (await findDocuments(
+        "poetry",
+        { type: "poem", language_code: languageCode },
+        200,
+        0
+      )) as Poem[];
+    } catch (dbError) {
+      console.warn("Poetry Cloudant query failed; using mock catalog only.", dbError);
+    }
+    const active = docs.filter((d) => d.status !== "removed");
+    if (active.length === 0) {
+      return NextResponse.json(mockPoemsForLanguage(languageCode));
+    }
+    active.sort((a, b) => b.created_at.localeCompare(a.created_at));
+    return NextResponse.json(active);
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "failed" },

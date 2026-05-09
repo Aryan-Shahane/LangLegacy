@@ -1,0 +1,441 @@
+import type { Poem, Story } from "@/lib/types";
+
+/** Bundled MP3s in `public/audio/samples/` (rotated for variety). */
+function sampleAudio(seed: number): string {
+  const n = (Math.abs(seed) % 4) + 1;
+  return `/audio/samples/demo-${n}.mp3`;
+}
+
+export const MOCK_POEMS: Poem[] = [
+  {
+    _id: "10000000-0000-4000-8000-000000000001",
+    type: "poem",
+    language_code: "mi",
+    title: "Te manawa o te moana",
+    author_name: "Hine R.",
+    body_original:
+      "E rere ana te tai, e whakarongo ana au\nki ngā tāngata o mua e karanga ana\ni te tonga o te kāinga. Kei te mau tonu te mauri\ni roto i te reo ka ora tonu tonu.",
+    body_translation:
+      "The tide runs on, I listen\nto the people of old who call\nfrom the south of the home. The life-force still holds\nwithin the language that will ever live.",
+    audio_url: sampleAudio(1),
+    reactions: { "🌿": ["demo-user"], "❤️": ["demo-user"] },
+    report_count: 0,
+    status: "active",
+    created_at: "2026-04-12T14:20:00.000Z",
+  },
+  {
+    _id: "10000000-0000-4000-8000-000000000002",
+    type: "poem",
+    language_code: "mi",
+    title: "Karakia o te ata",
+    author_name: "Tama W.",
+    body_original:
+      "Whakataka te hau ki te uru\nWhakataka te hau ki te tonga\nHīkarikitia ki te arahi\nTe ara e haere nei ahau.",
+    body_translation:
+      "Cease the wind to the west\nCease the wind to the south\nLet the pathway be guided\nWhere I am walking now.",
+    audio_url: sampleAudio(2),
+    reactions: {},
+    report_count: 0,
+    status: "active",
+    created_at: "2026-04-18T09:05:00.000Z",
+  },
+  {
+    _id: "10000000-0000-4000-8000-000000000011",
+    type: "poem",
+    language_code: "cy",
+    title: "Y llais yn y cwm",
+    author_name: "Elin Morgan",
+    body_original:
+      "Mae'r gwanwyn yn dod dros y bryn,\nac mi glywaf lais fy mam yn canu\nhen ganeuon nad aethant byth yn angof\nyn y cwm lle mae'r awyr yn glir.",
+    body_translation:
+      "Spring comes over the hill,\nand I hear my mother's voice singing\nold songs that never quite faded\nin the valley where the air is clear.",
+    audio_url: sampleAudio(3),
+    reactions: { "🎵": ["demo-user"] },
+    report_count: 0,
+    status: "active",
+    created_at: "2026-04-10T11:00:00.000Z",
+  },
+  {
+    _id: "10000000-0000-4000-8000-000000000012",
+    type: "poem",
+    language_code: "cy",
+    title: "Cofio'r mor",
+    author_name: "Ieuan P.",
+    body_original:
+      "Pan fo'r tonnau'n taro'r creigiau'n rhydd,\nmithiau yw'r geiriau sy'n dod i'm gwddf—\ncaled fel halen, melys fel cân,\nyn fy nghof am borthladd fy mam.",
+    body_translation:
+      "When the waves strike the rock freely,\nthousands are the words that reach my throat—\nhard as salt, sweet as a song,\nin my memory of my mother's harbour.",
+    audio_url: sampleAudio(4),
+    reactions: {},
+    report_count: 0,
+    status: "active",
+    created_at: "2026-04-22T16:40:00.000Z",
+  },
+  {
+    _id: "10000000-0000-4000-8000-000000000021",
+    type: "poem",
+    language_code: "kw",
+    title: "An mor ogas",
+    author_name: "Jory T.",
+    body_original:
+      "An mor a wrug sawya ow honan war an treth\nHa'y lewyjyon a besyas y'n gorhel koth\nNy vydnaf an woles mayth es delhevel\nMar pleg lebmyn yw dhyworth aga lav.",
+    body_translation:
+      "The sea that threw itself upon the strand\nAnd its fingers stayed upon the old keel\nI cannot say how I could ever heal\nIf prayer now is from their hand.",
+    audio_url: sampleAudio(5),
+    reactions: { "🌊": ["demo-user"] },
+    report_count: 0,
+    status: "active",
+    created_at: "2026-03-28T08:15:00.000Z",
+  },
+  {
+    _id: "10000000-0000-4000-8000-000000000022",
+    type: "poem",
+    language_code: "kw",
+    title: "Gorthu an tùs a wrug dyski",
+    author_name: "Lowenna K.",
+    body_original:
+      "Mar ny aljyn ni ygeri agan geirya\nYn uhel ha furv y'n iskel a arallas,\npandra yw tal an bywnans mar ny wrug\nan gorf y'n leven y'n skrifa?",
+    body_translation:
+      "If we cannot open our words\nhigh and shaped as those below who helped,\nwhat is the tally of life if the body\nin its silence will not write?",
+    audio_url: sampleAudio(6),
+    reactions: {},
+    report_count: 0,
+    status: "active",
+    created_at: "2026-04-01T19:22:00.000Z",
+  },
+  {
+    _id: "10000000-0000-4000-8000-000000000031",
+    type: "poem",
+    language_code: "arq",
+    title: "Êlúru qa tharam (archive sample)",
+    author_name: "Archive annotator",
+    body_original:
+      "Tharam ú-sil, náren vo lethe kóm alúra.\nSa ven óri ethin; sa qôl u métha núr.\nKept for learners: a compact stanza in Aruqa script-style romanization.",
+    body_translation: "",
+    audio_url: sampleAudio(7),
+    reactions: {},
+    report_count: 0,
+    status: "active",
+    created_at: "2026-05-01T12:00:00.000Z",
+  },
+  {
+    _id: "10000000-0000-4000-8000-000000000032",
+    type: "poem",
+    language_code: "arq",
+    title: "Instrumental gloss line (demo)",
+    author_name: "Field unit B",
+    body_original: "Qeth · mora · sil-tú. (three gloss tokens tied to the Learn-tab coverage bar)",
+    body_translation: "",
+    audio_url: sampleAudio(8),
+    reactions: {},
+    report_count: 0,
+    status: "active",
+    created_at: "2026-05-03T07:30:00.000Z",
+  },
+  {
+    _id: "10000000-0000-4000-8000-000000000041",
+    type: "poem",
+    language_code: "gam",
+    title: "Gunhiin ngiyanu burrigal",
+    author_name: "J. Wright (learner orthography)",
+    body_original:
+      "Yaama ngiyani yinarr\nBurralga galinggaanhay walanba\nGiyanha ngurrambaa dhaadhur\nWalumaldyidyi ngiyani.",
+    body_translation:
+      "Hello everyone — women\nsinging together in the evening\nwe remember Country and speak\nwith one another here.",
+    audio_url: sampleAudio(9),
+    reactions: { "✨": ["demo-user"] },
+    report_count: 0,
+    status: "active",
+    created_at: "2026-04-05T10:10:00.000Z",
+  },
+  {
+    _id: "10000000-0000-4000-8000-000000000042",
+    type: "poem",
+    language_code: "gam",
+    title: "Giirr ngamila",
+    author_name: "Community circle",
+    body_original:
+      "Yalagi giirr ngamila\nngiyani burrugi gamilaraay\nwala-gi dhaaygal\nngaanga-y galima-gu.",
+    body_translation:
+      "Many paths come home\nwe carry Gamilaraay\ntoward tomorrow\nfor the children coming.",
+    audio_url: sampleAudio(10),
+    reactions: {},
+    report_count: 0,
+    status: "active",
+    created_at: "2026-04-14T13:45:00.000Z",
+  },
+  {
+    _id: "10000000-0000-4000-8000-000000000051",
+    type: "poem",
+    language_code: "oj",
+    title: "Aazhawi ingoji",
+    author_name: "Miskwaadesi",
+    body_original:
+      "Aazhawi ingoji gii-zaagi'idiwag\nmakade-makwa miinawaa makwa\napii gii-tazhimaad.\nNake\nmiigwechiwendamawag akeyaa.",
+    body_translation:
+      "Somewhere far they once loved each other\nblack bear and bear\nwhen it was snowing long ago.\nListen —\nthey thank the distant sky.",
+    audio_url: sampleAudio(11),
+    reactions: { "🐻": ["demo-user"] },
+    report_count: 0,
+    status: "active",
+    created_at: "2026-03-20T15:00:00.000Z",
+  },
+  {
+    _id: "10000000-0000-4000-8000-000000000052",
+    type: "poem",
+    language_code: "oj",
+    title: "Ziigwan",
+    author_name: "Binesi",
+    body_original:
+      "Ziigwan gii-bi-izhaamagak\nwaabishkizo gii-pi-ayaamowag\naanawi gii-kiskendaamin\nbaamaa apane gii-ayaamagak.",
+    body_translation:
+      "Spring had barely arrived\nsnow went away speaking\nyet we still knew\nlater they would be well.",
+    audio_url: sampleAudio(12),
+    reactions: {},
+    report_count: 0,
+    status: "active",
+    created_at: "2026-04-25T18:18:00.000Z",
+  },
+];
+
+export const MOCK_STORIES: Story[] = [
+  {
+    _id: "20000000-0000-4000-8000-000000000001",
+    type: "story",
+    language_code: "mi",
+    title: "Te whare o te kuia",
+    author_name: "Kahu H.",
+    description:
+      "Short oral-history excerpt: rebuilding the old meeting house and the songs heard across one summer.",
+    audio_url: sampleAudio(2),
+    transcript:
+      "I whakaora mātou i te whare o tōku kuia i te raumati. Ko ngā ringa o te hapū katoa i hui mai ki te whakatika i ngā pou, ā, i te pō ka whakarongo mātou ki ngā waiata kua roa kua moe ana i roto i ngā pukapuka. Ka kī ahau ki a koe, ehara i te hangarau anake, engari ko te ora o te reo tonu kei reira. Ko te whakaaro, ka piki tonu te iwi ina taea e tātou te whakarongo ki te reo o te tangata kua wehe atu ki tua o te ārai.",
+    transcript_translation:
+      "We restored my grandmother's house that summer. The hands of the whole sub-tribe came to straighten the posts, and at night we listened to songs that had long slept in books. I'll tell you — it was not technology alone, but the life of the language that lived there. The thought is, the people rise when we can still listen to the voices of those who have gone beyond the veil.",
+    duration_seconds: 186,
+    tags: ["oral history", "wharenui", "summer"],
+    reactions: { "📖": ["demo-user"] },
+    report_count: 0,
+    status: "active",
+    created_at: "2026-04-08T20:00:00.000Z",
+  },
+  {
+    _id: "20000000-0000-4000-8000-000000000002",
+    type: "story",
+    language_code: "mi",
+    title: "Huarahi ki te kura",
+    author_name: "Ripeka T.",
+    description:
+      "A child's walk to the language class — birds, greetings, and the promise of a generation that listens.",
+    audio_url: sampleAudio(4),
+    transcript:
+      "I haere mātou ko taku irāmutu ki te kura reo. I te ata kātahi te manu rere i te tuanui o te whare tawhito, ka mātakitaki mātou. I te akomanga ka ako mātou ki te whakahua i ngā orokohanga, ka whakamaumahara tōku kuia ki a mātou mā te kōrero poto. Ko te whāinga, kia kaua e moumou i te reo engari kia whakapuaki i te wā e tika ana. Ahakoa he tūāhanga poto te rā, ko te hōnore nui tonu te whakaaro ki te hunga nā rātou i uaua te ako.",
+    transcript_translation:
+      "My niece and I went to the language school. In the morning a bird flew along the roof of the old building, and we watched. In class we learned to pronounce phrases, and my grandmother remembered us with a short speech. The goal is not to waste the language but to speak it at the right time. Even though the day was short, the honour still goes to those who made learning hard.",
+    duration_seconds: 212,
+    tags: ["education", "children"],
+    reactions: {},
+    report_count: 0,
+    status: "active",
+    created_at: "2026-04-19T12:30:00.000Z",
+  },
+  {
+    _id: "20000000-0000-4000-8000-000000000011",
+    type: "story",
+    language_code: "cy",
+    title: "Y ffynnon ar y ffordd",
+    author_name: "Megan Lloyd",
+    description: "Travellers stop at a hidden well; local names and weather lore surface in conversation.",
+    audio_url: sampleAudio(6),
+    transcript:
+      "Roedd dim ond dau ohonon ni ar y ffordd â'r glaw yn troi at eira. Wedyn gwelais i hen ffynnon ger y gat, lle roedd tad-cu'n dwed wrthyf stori am yr haul yn codi dros y mynydd. Dywedodd mai cof y pentref yw'r gair sy'n aros pan mae'r iaith yn brin, a dyna pam mae'r plant yn dysgu'r enwau am yr afonydd cyn eu bod yn siarad yn rhugl. Fe wnaethon ni yfed o'r dŵr oer cyn cerdded ymlaen, a bron na welais i ddim lle arall yn dathlu'r gaeaf fel hynny.",
+    transcript_translation:
+      "Only two of us were on the road as rain turned to snow. Then I saw an old well by the gate, where grandfather had told me a story about the sun rising over the mountain. He said the village's memory is the word that remains when the language is scarce, which is why children learn the river names before they speak fluently. We drank the cold water before walking on, and I almost saw no other place celebrate winter like that.",
+    duration_seconds: 198,
+    tags: ["travel", "winter", "place-names"],
+    reactions: { "❄️": ["demo-user"] },
+    report_count: 0,
+    status: "active",
+    created_at: "2026-04-11T09:50:00.000Z",
+  },
+  {
+    _id: "20000000-0000-4000-8000-000000000012",
+    type: "story",
+    language_code: "cy",
+    title: "Cwis ar y bws",
+    author_name: "Owain J.",
+    description: "Learners quiz each other on the bus to the eisteddfod — laughter and gentle correction.",
+    audio_url: sampleAudio(8),
+    transcript:
+      "Ar y bws i'r eisteddfod fe ddechreuodd cymal byr o gwis: 'beth yw'r gair am dydd Mawrth ac i ble mae'n perthyn yn syth?' Roedd pawb yn chwerthin pan aeth rhywun â'r ateb o chwith. Fe soniais i am yr hen athrawes roddwyd iddi flodau am ei harferiad o ail-adrodd llinellau fel cân. Er fy mod i dal yn dysgu, cefais i geiau newydd erbyn iddi fynd noswylio dros y bryn.",
+    transcript_translation:
+      "On the bus to the eisteddfod a short quiz began: 'What is the word for Tuesday and where does it belong directly?' Everyone laughed when someone gave the wrong answer. I mentioned the old teacher who was given flowers for her habit of repeating lines like a song. Although I am still learning, I had new phrases by the time we went over the hill at dusk.",
+    duration_seconds: 165,
+    tags: ["learners", "travel"],
+    reactions: {},
+    report_count: 0,
+    status: "active",
+    created_at: "2026-04-16T14:05:00.000Z",
+  },
+  {
+    _id: "20000000-0000-4000-8000-000000000021",
+    type: "story",
+    language_code: "kw",
+    title: "Porth koth an mor",
+    author_name: "Jago P.",
+    description: "Fishermen recall the old harbour lights and the words their parents used for tides.",
+    audio_url: sampleAudio(10),
+    transcript:
+      "Orth an nos, ow kensa herdh dhe'n harber, klewys ny vern a-dro dhe'n lythernow koth ha'n kesunyow treth. Y leverys an tesedhek, may feusya an ky a gols rag an re nag yw omma lebmyn, mes y’gan ni y lyvrow ha’n kanow a wàr an men ny a wor kemeres an gwella. Hebma yw an danvenyans, dell dallozough: desevos an gewar ha desevos an ger ughel orth an remenant holon.",
+    transcript_translation:
+      "At night, on our first walk to the harbour, we heard talk of old letters and shore meetings. The elder said the heart broke for those no longer here, but we have books and songs on the stone that know how to take the best. This is the gift, you will hear: growing the air and growing the high word toward what the heart leaves behind.",
+    duration_seconds: 228,
+    tags: ["sea", "memory"],
+    reactions: {},
+    report_count: 0,
+    status: "active",
+    created_at: "2026-03-30T17:20:00.000Z",
+  },
+  {
+    _id: "20000000-0000-4000-8000-000000000022",
+    type: "story",
+    language_code: "kw",
+    title: "Kelwel an skol",
+    author_name: "Tegen S.",
+    description: "Parents organising a Saturday Cornish circle for beginners and elders together.",
+    audio_url: sampleAudio(12),
+    transcript:
+      "Y skol nessa vynn ni gul yw dhe dhyski an ger enow ha’ga vynnyth orth an duch obledhen. Yma an flehes ow klerhe orth aga koth, hag yma an koth ow tasvelles orth an flehes. Nag yw martesen perfyth, mes yma an re ma ow kelwil orth aga y honen dell yw res, ha hedna yw an kensa gras war an fordh dybrys. May hallo pobel wàr an bedn vos ow tiskwedhes an ger a-varr yn-mysk an gwella aray.",
+    transcript_translation:
+      "The next school we want to make is one that teaches the new word and its desire for the shared land. Children listen to elders, and elders answer children. Maybe it is not perfect, but these people are calling to each other as they should, and that is the first grace on the hard road. May people on the hill keep showing the word early among the best rows.",
+    duration_seconds: 194,
+    tags: ["school", "Saturday"],
+    reactions: { "🏫": ["demo-user"] },
+    report_count: 0,
+    status: "active",
+    created_at: "2026-04-23T08:00:00.000Z",
+  },
+  {
+    _id: "20000000-0000-4000-8000-000000000031",
+    type: "story",
+    language_code: "arq",
+    title: "Gloss session 04 — oral clip",
+    author_name: "Field lead",
+    description:
+      "Synthetic archive slice: transcript lines aligned to dictionary tokens for learner QA (demo language).",
+    audio_url: sampleAudio(14),
+    transcript:
+      "Segment note ARQ-DEMO-318: speaker A delivers three intonation frames over a fixed gloss list. Lines reference the Learn-tab coverage model — each token is counted until the archive threshold releases full glossary rendering. Use this clip to test scrubbing and transcript lock behaviour under archive policy.",
+    transcript_translation: "",
+    duration_seconds: 95,
+    tags: ["archive", "QA", "demo"],
+    reactions: {},
+    report_count: 0,
+    status: "active",
+    created_at: "2026-05-02T10:45:00.000Z",
+  },
+  {
+    _id: "20000000-0000-4000-8000-000000000032",
+    type: "story",
+    language_code: "arq",
+    title: "Inventory v0 — storyteller B",
+    author_name: "Annotator pool",
+    description: "Second demo reel with placeholder orthography and duration metadata only.",
+    audio_url: sampleAudio(1),
+    transcript:
+      "Vireth · ulom · pas-keth. Repetition for waveform testing. No community translation layer in archive mode.",
+    transcript_translation: "",
+    duration_seconds: 72,
+    tags: ["demo", "inventory"],
+    reactions: {},
+    report_count: 0,
+    status: "active",
+    created_at: "2026-05-07T16:10:00.000Z",
+  },
+  {
+    _id: "20000000-0000-4000-8000-000000000041",
+    type: "story",
+    language_code: "gam",
+    title: "Burra wiyn ngiyani",
+    author_name: "Aunty L. (shared transcript)",
+    description: "Campfire telling: returning to Country after rain, kids learning bird names by sound.",
+    audio_url: sampleAudio(3),
+    transcript:
+      "Ngiyani yindyamarra yanhaalali burrugi giynhay, yanha burra wiyayl ngurrambaa. Waray minga ngiyani miyaganha gulbirrangay burra duwinbila galing, galing nganha ngiyani waalanga-y gadhuuga-y gimbiyal. Giilang gamilaraay wirri galing, giinadaay dhaay galima-y. Dhiya ngiyani wambuwingal, ngiyani maanda, ngiyani burrugi walawala-y burrbanggi.",
+    transcript_translation:
+      "We sit together again on Country after rain. Today we track little birds listening — listen how we walk slowly toward tomorrow. Gamilaraay stays here, we all carry one fire. This is our promise, our knowledge, we children walking bright.",
+    duration_seconds: 241,
+    tags: ["Country", "birds", "rain"],
+    reactions: { "🔥": ["demo-user"] },
+    report_count: 0,
+    status: "active",
+    created_at: "2026-04-06T13:15:00.000Z",
+  },
+  {
+    _id: "20000000-0000-4000-8000-000000000042",
+    type: "story",
+    language_code: "gam",
+    title: "Yananha ngiyani winangali",
+    author_name: "Community arts",
+    description: "A short segment about painting place-names on the hall wall for the next school term.",
+    audio_url: sampleAudio(5),
+    transcript:
+      "Yananha ngiyani winangali giirr galing, mayina-y galima. Ngiyani yumburra wala-y miyaganha, minya-y burrbang-ngali giirray-y bilaarrangal. Gaba ngay dhiya balungga, ngiyani burrugi dhaay gundhi-y gilingal giyna-y, yananha ngiyani burradha yindyamarra.",
+    transcript_translation:
+      "Today we listen together on the path for children. We paint toward tomorrow, we look for new lines on paper. When this night ends, we children put fire in the house, today we sit again.",
+    duration_seconds: 178,
+    tags: ["art", "school"],
+    reactions: {},
+    report_count: 0,
+    status: "active",
+    created_at: "2026-04-13T11:11:00.000Z",
+  },
+  {
+    _id: "20000000-0000-4000-8000-000000000051",
+    type: "story",
+    language_code: "oj",
+    title: "Zhooshkodenz gii-ayaanid",
+    author_name: "Niizh",
+    description: "Winter night stories about Marten and the first map drawn in the sugar bush.",
+    audio_url: sampleAudio(7),
+    transcript:
+      "Aapii zhooniyaa gii-aabitwang akeyaa gii-tazhi-gwayakoshimoowaad, gii-giigidowaad o’ow weweni-bazhindooyan. Mii dash ingoji dibishkoo gii-nitaawaganaabaawaad, aabajichiganan igo gii-mikigaadeg gii-waabanda’iwewaad iniw minising. Mii sa zhigo naagdowenimaag owe mishoomisini-anishinaabensag owe gaa-piizhaagoyaanid, mii dash iw bizaan akeyaa iw waabanda’iweying. Gaawiin wii-kidotamaasiiwag iniw akeyaa ingoji apane gaa-kikendanzowaad.",
+    transcript_translation:
+      "In that deep winter they sat straight under the stars and spoke about the quiet trail. Then farther north they traded together, tools were buried when they showed those little islands. So we thank those grandfather-children who arrived beside us — that is why the sky shows that teaching. They did not hide from the spirit where they always knew.",
+    duration_seconds: 256,
+    tags: ["winter", "map", "family"],
+    reactions: {},
+    report_count: 0,
+    status: "active",
+    created_at: "2026-03-25T19:40:00.000Z",
+  },
+  {
+    _id: "20000000-0000-4000-8000-000000000052",
+    type: "story",
+    language_code: "oj",
+    title: "Iskigamizige-giizis",
+    author_name: "Migizi",
+    description: "Boiling sap season — instructions mixed with jokes around the cooking kettle.",
+    audio_url: sampleAudio(9),
+    transcript:
+      "Apii ishkigamizigewag gii-biininamowaad zhiiwaagamigong, gii-maajitaawaad ishkodensan gii-pi-miigaazoowaad. Nimikwendam inow aanakwad apiish anokiiwaad iniw imaa o’ow aabajichigan. Gii-miinigoowiziye naagwe iniw zhigaagowin. Weweni go gii-izhi-bapashkizigewaad mii gii-wiikwajitoowaad imaa ishkwaa-mikwendaagoziyaan.",
+    transcript_translation:
+      "When they boiled sap inside the lodge, they started small fires that crossed over. I remember the cloud when they worked there with that tool. He gave thanks toward that sweetness. Truly they jumped lightly then they used it after I forgot.",
+    duration_seconds: 201,
+    tags: ["sugar bush", "spring"],
+    reactions: { "🍯": ["demo-user"] },
+    report_count: 0,
+    status: "active",
+    created_at: "2026-04-27T07:55:00.000Z",
+  },
+];
+
+export function mockPoemsForLanguage(code: string): Poem[] {
+  return MOCK_POEMS.filter((p) => p.language_code === code).slice().sort((a, b) => b.created_at.localeCompare(a.created_at));
+}
+
+export function mockStoriesForLanguage(code: string): Story[] {
+  return MOCK_STORIES.filter((s) => s.language_code === code)
+    .slice()
+    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+}
