@@ -66,6 +66,19 @@ async function cloudantFetch(input: RequestInfo | URL, init: RequestInit = {}): 
   });
 }
 
+async function ensureDatabase(db: string): Promise<void> {
+  const { base } = cloudantConfig();
+  const res = await cloudantFetch(`${base}/${db}`, {
+    method: "PUT",
+    cache: "no-store",
+  });
+  if (res.ok || res.status === 412) {
+    // 412 means database already exists.
+    return;
+  }
+  throw new Error(`Cloudant ensure database failed: ${res.status}`);
+}
+
 export async function findDocuments(
   db: string,
   selector: Json,
@@ -73,11 +86,19 @@ export async function findDocuments(
   skip = 0
 ): Promise<Json[]> {
   const { base } = cloudantConfig();
-  const res = await cloudantFetch(`${base}/${db}/_find`, {
+  let res = await cloudantFetch(`${base}/${db}/_find`, {
     method: "POST",
     cache: "no-store",
     body: JSON.stringify({ selector, limit, skip }),
   });
+  if (res.status === 404) {
+    await ensureDatabase(db);
+    res = await cloudantFetch(`${base}/${db}/_find`, {
+      method: "POST",
+      cache: "no-store",
+      body: JSON.stringify({ selector, limit, skip }),
+    });
+  }
   if (!res.ok) {
     throw new Error(`Cloudant _find failed: ${res.status}`);
   }
@@ -101,11 +122,19 @@ export async function getAllDocuments(db: string): Promise<Json[]> {
 
 export async function saveDocument(db: string, doc: Json): Promise<Json> {
   const { base } = cloudantConfig();
-  const res = await cloudantFetch(`${base}/${db}`, {
+  let res = await cloudantFetch(`${base}/${db}`, {
     method: "POST",
     cache: "no-store",
     body: JSON.stringify(doc),
   });
+  if (res.status === 404) {
+    await ensureDatabase(db);
+    res = await cloudantFetch(`${base}/${db}`, {
+      method: "POST",
+      cache: "no-store",
+      body: JSON.stringify(doc),
+    });
+  }
   if (!res.ok) {
     throw new Error(`Cloudant save failed: ${res.status}`);
   }
@@ -128,11 +157,19 @@ export async function getDocument(db: string, id: string): Promise<Json | null> 
 
 export async function putDocument(db: string, id: string, doc: Json): Promise<Json> {
   const { base } = cloudantConfig();
-  const res = await cloudantFetch(`${base}/${db}/${encodeURIComponent(id)}`, {
+  let res = await cloudantFetch(`${base}/${db}/${encodeURIComponent(id)}`, {
     method: "PUT",
     cache: "no-store",
     body: JSON.stringify(doc),
   });
+  if (res.status === 404) {
+    await ensureDatabase(db);
+    res = await cloudantFetch(`${base}/${db}/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      cache: "no-store",
+      body: JSON.stringify(doc),
+    });
+  }
   if (!res.ok) {
     throw new Error(`Cloudant put document failed: ${res.status}`);
   }
