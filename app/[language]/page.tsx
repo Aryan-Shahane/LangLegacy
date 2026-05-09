@@ -46,6 +46,33 @@ function coerceLanguageHeader(raw: Record<string, unknown> | null): {
   };
 }
 
+const MOCK_HEADERS: Record<string, Record<string, unknown>> = {
+  mi: {
+    _id: "mi",
+    name: "Māori",
+    region: "New Zealand",
+    entry_count: 1204,
+    contributor_count: 42,
+    updated_at: new Date().toISOString(),
+  },
+  gam: {
+    _id: "gam",
+    name: "Gamilaraay",
+    region: "New South Wales, Australia",
+    entry_count: 312,
+    contributor_count: 15,
+    updated_at: new Date().toISOString(),
+  },
+  oj: {
+    _id: "oj",
+    name: "Anishinaabe",
+    region: "Great Lakes Region",
+    entry_count: 520,
+    contributor_count: 28,
+    updated_at: new Date().toISOString(),
+  }
+};
+
 export default async function LanguageDictionaryPage({
   params,
   searchParams,
@@ -55,7 +82,12 @@ export default async function LanguageDictionaryPage({
 }) {
   const { language } = await params;
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
-  const rawDoc = (await getDocument("languages", language)) as Record<string, unknown> | null;
+  
+  let rawDoc = (await getDocument("languages", language)) as Record<string, unknown> | null;
+  if (!rawDoc && MOCK_HEADERS[language]) {
+    rawDoc = MOCK_HEADERS[language];
+  }
+
   const header = coerceLanguageHeader(rawDoc);
   const viewer = await getSessionFromCookie();
   const canModerate = viewerCanModerate(viewer);
