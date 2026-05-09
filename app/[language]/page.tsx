@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { getSessionFromCookie } from "@/lib/auth";
 import { getDocument } from "@/lib/cloudant";
 import type { Language } from "@/lib/types";
-import DictionaryClient from "./DictionaryClient";
+import LanguageTabsPanel from "@/components/LanguageTabsPanel";
 
 export default async function LanguageDictionaryPage({
   params,
@@ -9,6 +10,7 @@ export default async function LanguageDictionaryPage({
   params: { language: string };
 }) {
   const languageDoc = (await getDocument("languages", params.language)) as Language | null;
+  const viewer = await getSessionFromCookie();
   const dictionaryTitle = languageDoc?.name
     ? `${languageDoc.name} (${languageDoc.code})`
     : params.language;
@@ -26,12 +28,11 @@ export default async function LanguageDictionaryPage({
           </Link>
         </div>
         <p className="max-w-prose text-sm leading-relaxed text-slate-400">
-          Loaded entries stream in pages so the whole lexicon stays approachable. Matches fire against endangered-language lemmas{" "}
-          <span className="text-slate-300">or</span> plain English translations. Audio tiles respond to clicks for instant playback whenever a
-          Cloudinary-hosted clip exists.
+          Explore this language across dictionary, community discussion, chat rooms, and learning sessions. Search supports endangered-language
+          terms and English translations, while community moderation tools keep shared content healthy.
         </p>
       </div>
-      <DictionaryClient languageCode={params.language} />
+      <LanguageTabsPanel languageCode={params.language} viewerRole={viewer?.role || "user"} />
     </section>
   );
 }

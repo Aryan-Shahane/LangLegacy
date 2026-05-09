@@ -1,6 +1,7 @@
 "use client";
 
 import type { KeyboardEvent } from "react";
+import ReportModal from "@/components/ReportModal";
 import type { Entry } from "@/lib/types";
 import { useExclusivePlayback } from "@/hooks/useExclusivePlayback";
 
@@ -49,6 +50,21 @@ export default function DictionaryEntry({ entry }: { entry: Entry }) {
           >
             {pronunciationHint}
           </span>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            <ReportModal
+              compact
+              onSubmit={async (payload) => {
+                await fetch(`/api/entries/${entry._id}/report`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ ...payload, language_code: entry.language_code }),
+                });
+              }}
+            />
+          </div>
         </div>
       </div>
       {entry.phonetic ? <p className="text-sm text-slate-400">{entry.phonetic}</p> : null}
