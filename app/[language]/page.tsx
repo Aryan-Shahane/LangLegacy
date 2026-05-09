@@ -12,13 +12,15 @@ export default async function LanguageDictionaryPage({
   params,
   searchParams,
 }: {
-  params: { language: string };
-  searchParams?: { tab?: string };
+  params: Promise<{ language: string }>;
+  searchParams?: Promise<{ tab?: string }>;
 }) {
-  const languageDoc = (await getDocument("languages", params.language)) as Language | null;
+  const { language } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const languageDoc = (await getDocument("languages", language)) as Language | null;
   const viewer = await getSessionFromCookie();
-  const dictionaryTitle = languageDoc?.name ? `${languageDoc.name} Dictionary` : `${params.language} Dictionary`;
-  const activeTab = (searchParams?.tab || "dictionary").toLowerCase();
+  const dictionaryTitle = languageDoc?.name ? `${languageDoc.name} Dictionary` : `${language} Dictionary`;
+  const activeTab = (resolvedSearchParams?.tab || "dictionary").toLowerCase();
   const tabs = [
     { id: "dictionary", label: "Dictionary" },
     { id: "community", label: "Community" },
@@ -28,7 +30,7 @@ export default async function LanguageDictionaryPage({
 
   return (
     <div className="min-h-screen bg-[#FBF9F4] text-[#1B1C19]">
-      <TopBar activeTab={activeTab} languageCode={params.language} />
+      <TopBar activeTab={activeTab} languageCode={language} />
 
       <section className="px-6 py-12 md:px-12">
         <div className="mx-auto max-w-6xl text-center">
@@ -39,8 +41,8 @@ export default async function LanguageDictionaryPage({
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2" aria-label="Dictionary tabs">
             {tabs.map((tab) => {
-              const href = `/${params.language}?tab=${tab.id}`;
-              const isActive = activeTab === tab.id || (tab.id === "dictionary" && !searchParams?.tab);
+              const href = `/${language}?tab=${tab.id}`;
+              const isActive = activeTab === tab.id || (tab.id === "dictionary" && !resolvedSearchParams?.tab);
               return (
                 <Link key={tab.id} href={href}>
                   <Button variant={isActive ? "pill" : "outline"} size="sm">
@@ -55,7 +57,7 @@ export default async function LanguageDictionaryPage({
 
       <section className="px-6 pb-16 md:px-12">
         <div className="mx-auto max-w-6xl">
-          <LanguageTabsPanel languageCode={params.language} viewerRole={viewer?.role || "user"} />
+          <LanguageTabsPanel languageCode={language} viewerRole={viewer?.role || "user"} />
           <Card className="mt-6 grid gap-4 bg-[#1B3022] p-6 text-[#D0E9D4] md:grid-cols-[1.2fr_0.8fr]">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-[#B4CDB8]">Dialect Spotlight</p>
@@ -63,7 +65,7 @@ export default async function LanguageDictionaryPage({
               <p className="mt-3 max-w-xl text-sm text-[#D0E9D4]/85">
                 Explore oral histories and place-based pronunciation traditions that keep ancestral language forms alive.
               </p>
-              <Link href={`/${params.language}`} className="mt-4 inline-block">
+              <Link href={`/${language}`} className="mt-4 inline-block">
                 <Button variant="outline" className="border-white/30 bg-white text-[#1B3022] hover:bg-[#F0EEE9]">
                   Explore Archive
                 </Button>

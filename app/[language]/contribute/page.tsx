@@ -2,9 +2,10 @@ import Link from "next/link";
 import CommunityRecordingFlow from "@/components/CommunityRecordingFlow";
 import { getDocument } from "@/lib/cloudant";
 
-export default async function ContributePage({ params }: { params: { language: string } }) {
-  const languageDoc = await getDocument("languages", params.language);
-  const languageName = typeof languageDoc?.name === "string" ? languageDoc.name : params.language;
+export default async function ContributePage({ params }: { params: Promise<{ language: string }> }) {
+  const { language } = await params;
+  const languageDoc = await getDocument("languages", language);
+  const languageName = typeof languageDoc?.name === "string" ? languageDoc.name : language;
 
   return (
     <section className="space-y-6">
@@ -15,8 +16,8 @@ export default async function ContributePage({ params }: { params: { language: s
             Languages
           </Link>
           <span aria-hidden>|</span>
-          <Link href={`/${params.language}`} className="hover:text-slate-300">
-            Dictionary ({params.language})
+          <Link href={`/${language}`} className="hover:text-slate-300">
+            Dictionary ({language})
           </Link>
         </div>
         <h1 className="mt-3 text-2xl font-bold text-slate-100">Anonymous contribution · {languageName}</h1>
@@ -28,7 +29,7 @@ export default async function ContributePage({ params }: { params: { language: s
         </p>
       </div>
 
-      <CommunityRecordingFlow languageCode={params.language} languageName={languageName} />
+      <CommunityRecordingFlow languageCode={language} languageName={languageName} />
     </section>
   );
 }

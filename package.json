@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint ."
   },
   "keywords": [],
   "author": "",
@@ -15,7 +15,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1045.0",
     "jose": "^6.2.3",
-    "next": "^14.2.35",
+    "next": "^16.2.6",
     "openai": "^6.37.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -27,8 +27,8 @@
     "@types/react": "^18.3.28",
     "@types/react-dom": "^18.3.7",
     "autoprefixer": "^10.5.0",
-    "eslint": "^8.57.0",
-    "eslint-config-next": "^14.2.35",
+    "eslint": "^9.39.0",
+    "eslint-config-next": "^16.2.6",
     "postcss": "^8.5.14",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.4.5"
