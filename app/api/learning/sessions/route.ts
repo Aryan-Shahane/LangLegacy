@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getDocument, putDocument, saveDocument } from "@/lib/cloudant";
-import { getViewerIdentityFromHeaders } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import type { LearningProgress, LearningSession } from "@/lib/types";
 
 function dayStart(value: string) {
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "language_code is required" }, { status: 400 });
     }
 
-    const viewer = getViewerIdentityFromHeaders(req.headers);
+    const viewer = await requireSession();
     const userId = body.user_id || viewer.userId;
     const nowIso = new Date().toISOString();
     const cardsSeen = Math.max(0, Number(body.cards_seen || 0));
@@ -73,6 +73,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to save learning session" },
       { status: 500 }

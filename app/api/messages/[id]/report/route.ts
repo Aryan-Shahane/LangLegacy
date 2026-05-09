@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getViewerIdentityFromHeaders } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { createReportAndMarkTarget } from "@/lib/reports";
 import type { ReportReason } from "@/lib/types";
 
@@ -12,7 +12,7 @@ export async function POST(
     if (!body.reason || !body.language_code) {
       return NextResponse.json({ error: "reason and language_code are required" }, { status: 400 });
     }
-    const viewer = getViewerIdentityFromHeaders(req.headers);
+    const viewer = await requireSession();
     const saved = await createReportAndMarkTarget({
       targetType: "message",
       targetId: params.id,
@@ -24,6 +24,9 @@ export async function POST(
     });
     return NextResponse.json({ ok: true, saved });
   } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to report message" },
       { status: 500 }

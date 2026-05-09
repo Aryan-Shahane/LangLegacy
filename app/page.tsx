@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import LanguageCard from "@/components/LanguageCard";
 import SearchBar from "@/components/SearchBar";
@@ -50,7 +49,7 @@ const fallbackLanguages: Language[] = [
   },
 ];
 
-type HomeTab = "dictionary" | "community" | "chatrooms" | "learning";
+type LandingTab = "home" | "dictionary" | "community" | "chatrooms" | "learning";
 
 function DictionaryPanel({
   loading,
@@ -89,75 +88,12 @@ function DictionaryPanel({
   );
 }
 
-function CommunityPanel() {
-  return (
-    <section className="px-6 py-14 md:px-12">
-      <div className="mx-auto max-w-6xl rounded-2xl bg-[#E8DDD0] p-8">
-        <p className="text-xs uppercase tracking-[0.25em] text-[#5A665F]">Community</p>
-        <h2 className="mt-3 font-serif text-4xl text-[#1F2E27]">Stories, recordings, and language memory</h2>
-        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[#4F5D55]">
-          Discover community posts, oral history snapshots, and collaborative contributions that keep endangered languages active and visible.
-        </p>
-        <Link
-          href="/mi?tab=community"
-          className="mt-6 inline-block rounded-full bg-[#C4622D] px-5 py-2 text-sm font-semibold text-white"
-        >
-          Open Community
-        </Link>
-      </div>
-    </section>
-  );
-}
-
-function ChatroomsPanel() {
-  return (
-    <section className="px-6 py-14 md:px-12">
-      <div className="mx-auto max-w-6xl rounded-2xl bg-[#E8DDD0] p-8">
-        <p className="text-xs uppercase tracking-[0.25em] text-[#5A665F]">Chatrooms</p>
-        <h2 className="mt-3 font-serif text-4xl text-[#1F2E27]">Live practice spaces by language</h2>
-        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[#4F5D55]">
-          Join focused rooms for pronunciation, translation, and daily vocabulary drills with other learners and community speakers.
-        </p>
-        <Link
-          href="/mi?tab=chatrooms"
-          className="mt-6 inline-block rounded-full bg-[#C4622D] px-5 py-2 text-sm font-semibold text-white"
-        >
-          Open Chatrooms
-        </Link>
-      </div>
-    </section>
-  );
-}
-
-function LearningPanel() {
-  return (
-    <section className="px-6 py-14 md:px-12">
-      <div className="mx-auto max-w-6xl rounded-2xl bg-[#E8DDD0] p-8">
-        <p className="text-xs uppercase tracking-[0.25em] text-[#5A665F]">Learning</p>
-        <h2 className="mt-3 font-serif text-4xl text-[#1F2E27]">Guided flashcards and practice sessions</h2>
-        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[#4F5D55]">
-          Build confidence through lightweight study rounds with progress tracking and recall-based practice tailored to each language.
-        </p>
-        <Link
-          href="/mi?tab=learning"
-          className="mt-6 inline-block rounded-full bg-[#C4622D] px-5 py-2 text-sm font-semibold text-white"
-        >
-          Open Learning
-        </Link>
-      </div>
-    </section>
-  );
-}
-
 export default function HomePage() {
   const [languages, setLanguages] = useState<Language[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const searchParams = useSearchParams();
-  const tabFromUrl = (searchParams.get("tab") || "dictionary").toLowerCase();
-  const activeTab: HomeTab =
-    tabFromUrl === "community" || tabFromUrl === "chatrooms" || tabFromUrl === "learning" ? tabFromUrl : "dictionary";
+  const activeTab: LandingTab = "home";
 
   useEffect(() => {
     let mounted = true;
@@ -201,11 +137,12 @@ export default function HomePage() {
     });
   }, [languages, query]);
 
-  const tabItems: { id: HomeTab; label: string }[] = [
-    { id: "dictionary", label: "Dictionary" },
-    { id: "community", label: "Community" },
-    { id: "chatrooms", label: "Chatrooms" },
-    { id: "learning", label: "Learning" },
+  const tabItems: { id: LandingTab; label: string; href: string }[] = [
+    { id: "home", label: "Home", href: "/" },
+    { id: "dictionary", label: "Dictionary", href: "/mi?tab=dictionary" },
+    { id: "community", label: "Community", href: "/mi?tab=community" },
+    { id: "chatrooms", label: "Chatrooms", href: "/mi?tab=chatrooms" },
+    { id: "learning", label: "Learning", href: "/mi?tab=learning" },
   ];
 
   return (
@@ -238,7 +175,7 @@ export default function HomePage() {
               {tabItems.map((tab) => (
                 <Link
                   key={tab.id}
-                  href={`/?tab=${tab.id}`}
+                  href={tab.href}
                   className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
                     activeTab === tab.id ? "bg-[#E2E9DE] text-[#1F2E27]" : "text-[#E1D7C8] hover:bg-[#365649]"
                   }`}
@@ -246,6 +183,12 @@ export default function HomePage() {
                   {tab.label}
                 </Link>
               ))}
+              <Link
+                href="/auth"
+                className="rounded-full border border-[#6C8478] px-4 py-1.5 text-sm font-medium text-[#E1D7C8] hover:bg-[#365649]"
+              >
+                Login / Sign up
+              </Link>
             </nav>
           </div>
           <div className="mt-4 text-center">
@@ -262,12 +205,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {activeTab === "dictionary" ? (
-        <DictionaryPanel loading={loading} filteredLanguages={filteredLanguages} error={error} />
-      ) : null}
-      {activeTab === "community" ? <CommunityPanel /> : null}
-      {activeTab === "chatrooms" ? <ChatroomsPanel /> : null}
-      {activeTab === "learning" ? <LearningPanel /> : null}
+      <DictionaryPanel loading={loading} filteredLanguages={filteredLanguages} error={error} />
 
       <section className="bg-[#163629] px-6 py-14 text-[#F4EEE5] md:px-12">
         <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-2">

@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { findDocuments, saveDocument } from "@/lib/cloudant";
-import { getViewerIdentityFromHeaders } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import type { Room } from "@/lib/types";
 
 export async function GET(req: NextRequest) {
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as { language_code?: string; name?: string; description?: string };
-    const viewer = getViewerIdentityFromHeaders(req.headers);
+    const viewer = await requireSession();
     if (viewer.role !== "moderator" && viewer.role !== "admin") {
       return NextResponse.json({ error: "Only moderators can create rooms" }, { status: 403 });
     }
@@ -49,6 +49,9 @@ export async function POST(req: NextRequest) {
     const saved = await saveDocument("rooms", room as unknown as Record<string, unknown>);
     return NextResponse.json({ ok: true, saved });
   } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to create room" },
       { status: 500 }
