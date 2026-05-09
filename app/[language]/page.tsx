@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getSessionFromCookie } from "@/lib/auth";
+import AppNav from "@/components/AppNav";
 import { getDocument } from "@/lib/cloudant";
 import type { Language } from "@/lib/types";
 import LanguageTabsPanel from "@/components/LanguageTabsPanel";
@@ -17,6 +18,7 @@ export default async function LanguageDictionaryPage({
 
   return (
     <section className="space-y-4">
+      <AppNav />
       <div className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-bold">Dictionary · {dictionaryTitle}</h1>
