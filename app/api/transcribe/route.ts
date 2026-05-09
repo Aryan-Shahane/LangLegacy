@@ -2,6 +2,8 @@ import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { uploadAudio } from "@/lib/cos";
 import { transcribeAudio, isWhisperSupported } from "@/lib/whisper";
+import fs from "fs";
+import path from "path";
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,7 +16,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Upload the raw audio regardless
-    const ext = audio.type.includes("webm") ? "webm" : "wav";
+    let ext = "wav";
+    if (audio.type.includes("webm")) ext = "webm";
+    if (audio.type.includes("mp4")) ext = "mp4";
     const rawKey = `raw/${randomUUID()}.${ext}`;
     const rawBuffer = Buffer.from(await audio.arrayBuffer());
     let rawAudioUrl: string;
@@ -46,6 +50,14 @@ export async function POST(req: NextRequest) {
         /upload|Cloudinary/i.test(msg) ? "Audio upload failed. Please try again." : "Transcription server unavailable.";
       const status = /upload|Cloudinary/i.test(msg) ? 502 : 503;
       return NextResponse.json({ error: body }, { status });
+    }
+
+    // Save transcript to a local file for the user
+    try {
+      const outputPath = path.join(process.cwd(), "whisper_output.txt");
+      fs.writeFileSync(outputPath, `Transcript (${languageCode}):\n\n${whisperResult.transcript}\n\n`);
+    } catch (err) {
+      console.error("Failed to write whisper output to file:", err);
     }
 
     return NextResponse.json({

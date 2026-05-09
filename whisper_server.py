@@ -52,7 +52,7 @@ async def transcribe(audio: UploadFile = File(...), language_code: str = Form(""
         raise HTTPException(status_code=503, detail="faster-whisper is not installed")
 
     suffix = Path(audio.filename or "recording").suffix.lower()
-    if suffix not in {".wav", ".mp3", ".m4a", ".webm", ".ogg", ".flac"}:
+    if suffix not in {".wav", ".mp3", ".m4a", ".webm", ".ogg", ".flac", ".mp4"}:
         suffix = ".webm"
 
     data = await audio.read()

@@ -33,49 +33,60 @@ async function getIAMToken(): Promise<string> {
 
 export async function generateText(prompt: string): Promise<string> {
   if (!process.env.WATSONX_API_KEY) {
-    return `{"entries":[{"word":"Mokopuna","translation":"Grandchild","definition":"Descendant, grandchild. Represents the future generations.","phonetic":"/mo.ko.pu.na/","part_of_speech":"noun","example_sentence":"Arohanui ki aku mokopuna.","example_translation":"Much love to my grandchildren."}]}`;
+    throw new Error("WATSONX_API_KEY is not configured.");
   }
 
   const token = await getIAMToken();
   const baseUrl = process.env.WATSONX_URL || "https://us-south.ml.cloud.ibm.com";
   const projectId = requireEnv("WATSONX_PROJECT_ID");
+
+  // Only use models that actually exist on Watsonx
   const candidateModels = [
     process.env.WATSONX_MODEL_ID,
-    "ibm/granite-13b-instruct-v2",
     "ibm/granite-3-8b-instruct",
   ].filter((v): v is string => Boolean(v));
 
   let lastError = "";
   for (const modelId of candidateModels) {
-    const res = await fetch(`${baseUrl}/ml/v1/text/generation?version=2023-05-29`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model_id: modelId,
-        project_id: projectId,
-        input: prompt,
-        parameters: {
-          decoding_method: "greedy",
-          max_new_tokens: 2000,
-        },
-      }),
-    });
-
-    if (res.ok) {
-      const data = (await res.json()) as {
-        results?: Array<{ generated_text?: string }>;
-      };
-      return data.results?.[0]?.generated_text ?? "";
+    // Add a small delay between retries to avoid rate limits
+    if (lastError) {
+      await new Promise((r) => setTimeout(r, 1500));
     }
 
-    lastError = await res.text();
-    if (res.status !== 404 || !lastError.includes("model_not_supported")) {
-      break;
+    try {
+      const res = await fetch(`${baseUrl}/ml/v1/text/generation?version=2023-05-29`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model_id: modelId,
+          project_id: projectId,
+          input: prompt,
+          parameters: {
+            decoding_method: "greedy",
+            max_new_tokens: 2000,
+          },
+        }),
+      });
+
+      if (res.ok) {
+        const data = (await res.json()) as {
+          results?: Array<{ generated_text?: string }>;
+        };
+        const text = data.results?.[0]?.generated_text;
+        if (text) return text;
+      }
+
+      lastError = await res.text();
+      console.warn(`Watsonx model ${modelId} failed: ${lastError}`);
+    } catch (err) {
+      console.error(`Fetch error for model ${modelId}:`, err);
+      lastError = String(err);
     }
   }
 
-  throw new Error(`watsonx generation failed: ${lastError}`);
+  // No mock fallback — throw so callers can use their own fallback logic
+  throw new Error(`All Watsonx models failed. Last error: ${lastError}`);
 }

@@ -76,10 +76,7 @@ export async function transcribeAudio(
 ): Promise<{ transcript: string; language_code: string }> {
   const serverUrl = process.env.WHISPER_SERVER_URL;
   if (!serverUrl) {
-    return { 
-      transcript: "(Mock transcript) User audio captured. Please supply your word or phrase.", 
-      language_code: languageCode || "en" 
-    };
+    throw new Error("WHISPER_SERVER_URL environment variable is not configured.");
   }
 
   const form = new FormData();
@@ -94,18 +91,13 @@ export async function transcribeAudio(
       method: "POST",
       body: form,
     });
-  } catch {
-    return { 
-      transcript: "(Mock transcript) User audio captured. Please supply your word or phrase.", 
-      language_code: languageCode || "en" 
-    };
+  } catch (err) {
+    throw new Error(`Failed to connect to Whisper server at ${serverUrl}: ${err}`);
   }
 
   if (!res.ok) {
-    return { 
-      transcript: "(Mock transcript) User audio captured. Please supply your word or phrase.", 
-      language_code: languageCode || "en" 
-    };
+    const text = await res.text();
+    throw new Error(`Whisper server returned ${res.status}: ${text}`);
   }
 
   return (await res.json()) as { transcript: string; language_code: string };
