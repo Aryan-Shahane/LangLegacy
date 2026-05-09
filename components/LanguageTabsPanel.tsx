@@ -146,7 +146,7 @@ export default function LanguageTabsPanel({
 
       {tab === "learning" ? (
         <div className="space-y-3">
-          {progress ? <ProgressBar progress={progress} /> : null}
+          {progress ? <ProgressBar progress={progress} cardIndex={Math.min(seen + 1, cards.length || 0)} cardTotal={cards.length || 0} /> : null}
           {learningBody}
         </div>
       ) : null}

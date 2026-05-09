@@ -39,6 +39,15 @@ export default function CommunityFeed({ languageCode }: { languageCode: string }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [languageCode]);
 
+  const topLevelPosts = posts.filter((p) => !p.parent_post_id);
+  const repliesByParent = posts.reduce<Record<string, Post[]>>((acc, post) => {
+    if (post.parent_post_id) {
+      acc[post.parent_post_id] = acc[post.parent_post_id] || [];
+      acc[post.parent_post_id].push(post);
+    }
+    return acc;
+  }, {});
+
   return (
     <div className="space-y-4">
       <Card className="bg-[#F5F3EE] p-5">
@@ -62,10 +71,11 @@ export default function CommunityFeed({ languageCode }: { languageCode: string }
           await loadPosts();
         }}
       />
-      {posts.map((post) => (
+      {topLevelPosts.map((post) => (
         <PostCard
           key={post._id}
           post={post}
+          replies={(repliesByParent[post._id] || []).slice().sort((a, b) => a.created_at.localeCompare(b.created_at))}
           onReact={async (emoji) => {
             await fetch(`/api/posts/${post._id}/react`, {
               method: "POST",
@@ -80,6 +90,23 @@ export default function CommunityFeed({ languageCode }: { languageCode: string }
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ ...payload, language_code: languageCode }),
             });
+          }}
+          onReply={async ({ parentPostId, replyToAuthor, body }) => {
+            const res = await fetch("/api/posts", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                language_code: languageCode,
+                body,
+                parent_post_id: parentPostId,
+                reply_to_author: replyToAuthor,
+              }),
+            });
+            if (!res.ok) {
+              const payload = (await res.json().catch(() => ({}))) as { error?: string };
+              throw new Error(payload.error || "Unable to publish reply.");
+            }
+            await loadPosts();
           }}
         />
       ))}
