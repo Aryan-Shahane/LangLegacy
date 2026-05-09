@@ -1,4 +1,4 @@
-# LangLegacy
+# CLAUDE.md — LangLegacy
 
 ## Current Status
 
@@ -17,6 +17,7 @@ When asked to work on something, **edit the specific file only**. Do not regener
 ## What Still Needs To Be Done
 
 - [ ] **Swap Whisper API → local faster-whisper server** (see Local Whisper section below)
+- [ ] **Replace IBM COS → Cloudinary** in `lib/cos.ts` (see Cloudinary section below)
 - [ ] **Wire up real `.env.local` credentials** and smoke test each integration
 - [ ] **Seed Cloudant** with language documents
 - [ ] **UI polish** — styling pass on all pages and components
@@ -43,7 +44,7 @@ audio in → transcribe (local Whisper) → extract vocabulary (IBM watsonx) →
 | Speech-to-Text | **faster-whisper running locally** (free, CUDA-accelerated) |
 | NLP / Extraction | **IBM watsonx.ai** (`ibm/granite-13b-instruct-v2`) |
 | Database | **IBM Cloudant** (NoSQL / CouchDB) |
-| File Storage | **IBM Cloud Object Storage** (S3-compatible) |
+| File Storage | **Cloudinary** (free tier, no credit card) |
 
 ---
 
@@ -51,31 +52,62 @@ audio in → transcribe (local Whisper) → extract vocabulary (IBM watsonx) →
 
 ```env
 # IBM watsonx
-WATSONX_API_KEY=VDsdoVrV8_73wbQoU19BjhLDFrFz7KyzzTi1WfaoWAO2
-WATSONX_PROJECT_ID=9676ad1a-5085-41bc-b5d9-86dfdcac482c
+WATSONX_API_KEY=
+WATSONX_PROJECT_ID=
 WATSONX_URL=https://us-south.ml.cloud.ibm.com
 
 # IBM Cloudant
 CLOUDANT_URL=
 CLOUDANT_API_KEY=
 
-# IBM Cloud Object Storage
-COS_ENDPOINT=https://s3.us-south.cloud-object-storage.appdomain.cloud
-COS_ACCESS_KEY_ID=
-COS_SECRET_ACCESS_KEY=
-COS_BUCKET_NAME=lang-legacy-audio
+# Cloudinary (audio file storage)
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_UPLOAD_PRESET=
 
 # Local Whisper server
 WHISPER_SERVER_URL=http://localhost:8000
 ```
 
-Note: No `OPENAI_API_KEY` needed — Whisper runs locally.
+---
+
+## Cloudinary Integration (`lib/cos.ts`)
+
+IBM COS has been replaced with Cloudinary. Replace the entire `lib/cos.ts` file with:
+
+```typescript
+export async function uploadAudio(
+  key: string,
+  buffer: Buffer,
+  contentType: string
+): Promise<string> {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME!
+  const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET!
+
+  const blob = new Blob([buffer], { type: contentType })
+  const form = new FormData()
+  form.append('file', blob, key)
+  form.append('upload_preset', uploadPreset)
+  form.append('public_id', key.replace(/\//g, '_'))
+  form.append('resource_type', 'video') // Cloudinary uses 'video' for audio files
+
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
+    { method: 'POST', body: form }
+  )
+
+  if (!res.ok) throw new Error(`Cloudinary upload failed: ${res.status}`)
+  const data = await res.json()
+  return data.secure_url
+}
+```
+
+Note: `resource_type: 'video'` is correct — Cloudinary handles audio under the video resource type.
 
 ---
 
 ## Local Whisper Setup
 
-Whisper runs as a local Python FastAPI server on port 8000. The Next.js app POSTs audio to it and gets back a transcript. This replaces the OpenAI Whisper API call entirely.
+Whisper runs as a local Python FastAPI server on port 8000. The Next.js app POSTs audio to it and gets back a transcript.
 
 ### Python server (`whisper_server.py` — lives in project root)
 
@@ -94,8 +126,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Loads on startup — "base" is fast and accurate enough for demo
-# device="cuda" uses your NVIDIA GPU, compute_type="float16" is fastest on modern GPUs
+# device="cuda" uses NVIDIA GPU, compute_type="float16" is fastest
 model = WhisperModel("base", device="cuda", compute_type="float16")
 
 @app.post("/transcribe")
@@ -137,9 +168,7 @@ python whisper_server.py
 npm run dev
 ```
 
-### Update `lib/whisper.ts` to call local server instead of OpenAI
-
-Replace the entire file with:
+### `lib/whisper.ts` — replace entire file with
 
 ```typescript
 export async function transcribeAudio(
@@ -188,10 +217,10 @@ lang-legacy/
 │   ├── LanguageCard.tsx            # ✅ exists
 │   └── UploadFlow.tsx              # ✅ exists
 ├── lib/
-│   ├── watsonx.ts                  # ✅ exists — update if needed
+│   ├── watsonx.ts                  # ✅ exists
 │   ├── cloudant.ts                 # ✅ exists
-│   ├── cos.ts                      # ✅ exists
-│   ├── whisper.ts                  # ✅ exists — NEEDS REPLACING (see above)
+│   ├── cos.ts                      # ✅ exists — NEEDS REPLACING (see Cloudinary section)
+│   ├── whisper.ts                  # ✅ exists — NEEDS REPLACING (see Local Whisper section)
 │   └── types.ts                    # ✅ exists
 ├── .env.local                      # ← fill in credentials
 ├── .env.local.example              # ✅ exists
@@ -212,9 +241,10 @@ lang-legacy/
 - Uses Mango `_find` for filtered queries, `_all_docs` for full listings
 - Two databases: `languages` and `entries`
 
-### IBM Cloud Object Storage (`lib/cos.ts`)
-- Uses `@aws-sdk/client-s3` (IBM COS is S3-compatible with `forcePathStyle: true`)
-- `uploadAudio(key, buffer, contentType)` → returns public URL
+### Cloudinary (`lib/cos.ts`)
+- `uploadAudio(key, buffer, contentType)` → returns Cloudinary `secure_url`
+- Cloud name: `djeo1nkko`, upload preset: `langlegacy`
+- Uses unsigned upload preset — no API secret needed
 
 ---
 
@@ -246,7 +276,7 @@ lang-legacy/
   "part_of_speech": "greeting",
   "example_sentence": "Kia ora koutou katoa",
   "example_translation": "Hello everyone",
-  "audio_url": "https://s3.us-south.cloud-object-storage.appdomain.cloud/lang-legacy-audio/entries/uuid.webm",
+  "audio_url": "https://res.cloudinary.com/djeo1nkko/video/upload/entries_uuid.webm",
   "source": "archive",
   "created_at": "2026-05-08T00:00:00Z"
 }
@@ -279,13 +309,15 @@ lang-legacy/
 ### Good prompt patterns
 
 ```
-"Edit only lib/whisper.ts — replace its contents with the local server version from CLAUDE.md"
+"Edit only lib/cos.ts — replace its contents with the Cloudinary version from CLAUDE.md. Do not touch any other file."
+
+"Edit only lib/whisper.ts — replace its contents with the local server version from CLAUDE.md. Do not touch any other file."
+
+"Create whisper_server.py in the project root using the spec in CLAUDE.md. Do not touch any other file."
 
 "Edit only app/[language]/page.tsx — add a loading skeleton while entries are fetching. Do not touch any other file."
 
 "Edit only components/DictionaryEntry.tsx — improve the styling. Keep all props and logic identical."
-
-"Create whisper_server.py in the project root using the spec in CLAUDE.md. Do not touch any other file."
 ```
 
 ---
