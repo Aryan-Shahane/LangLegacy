@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { getSessionFromCookie } from "@/lib/auth";
 import SiteFooter from "@/components/SiteFooter";
 import TopBar from "@/components/TopBar";
-import { Button } from "@/components/ui/button";
 import { getDocument } from "@/lib/cloudant";
 import LanguageTabsPanel from "@/components/LanguageTabsPanel";
 import { formatRelativeTime } from "@/lib/formatRelative";
@@ -62,14 +60,7 @@ export default async function LanguageDictionaryPage({
   const viewer = await getSessionFromCookie();
   const dictionaryTitle = header.name || `${language} Dictionary`;
   const activeTab = (resolvedSearchParams?.tab || "dictionary").toLowerCase();
-  const topBarActiveTab = activeTab === "dictionary" ? "home" : activeTab;
-
-  const tabs = [
-    { id: "dictionary", label: "Dictionary" },
-    { id: "community", label: "Community" },
-    { id: "chatrooms", label: "Chatrooms" },
-    { id: "learning", label: "Learning" },
-  ];
+  const topBarActiveTab = activeTab === "dictionary" || !resolvedSearchParams?.tab ? "dictionary" : activeTab;
 
   return (
     <div className="min-h-screen bg-[#FBF9F4] text-[#1B1C19]">
@@ -109,20 +100,6 @@ export default async function LanguageDictionaryPage({
               </div>
             </dl>
           </header>
-
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-6" aria-label="Dictionary tabs">
-            {tabs.map((tab) => {
-              const href = `/${language}?tab=${tab.id}`;
-              const isActive = activeTab === tab.id || (tab.id === "dictionary" && !resolvedSearchParams?.tab);
-              return (
-                <Link key={tab.id} href={href}>
-                  <Button variant={isActive ? "pill" : "outline"} size="sm">
-                    {tab.label}
-                  </Button>
-                </Link>
-              );
-            })}
-          </div>
         </div>
       </section>
 

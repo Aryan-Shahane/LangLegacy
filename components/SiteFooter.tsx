@@ -6,7 +6,7 @@ export default function SiteFooter() {
       <div className="mx-auto flex w-full max-w-[1200px] flex-wrap items-center justify-between gap-4">
         <div>
           <p className="font-serif text-2xl text-[#061B0E]">LangLegacy</p>
-          <p className="text-sm text-[#434843]">© 2024 LangLegacy. Preserving the breath of our ancestors.</p>
+          <p className="text-sm text-[#434843]">© 2026 LangLegacy. Preserving the breath of our ancestors.</p>
         </div>
         <div className="flex gap-6 text-sm text-[#434843]">
           <span>Archives</span>

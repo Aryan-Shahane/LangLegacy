@@ -3,18 +3,20 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import NotificationsBell from "@/components/NotificationsBell";
 import { cn } from "@/lib/utils";
 
+/** Landing `/`: first nav item is Dictionary (language explorer / archives scroll target). */
 const LANDING_TABS = [
-  { id: "home", label: "Home" },
   { id: "dictionary", label: "Dictionary" },
   { id: "community", label: "Community" },
   { id: "chatrooms", label: "Chatrooms" },
   { id: "learning", label: "Learning" },
 ] as const;
 
+/** Per-language hub: Dictionary opens the `{code}` archive. */
 const LANGUAGE_TABS = [
-  { id: "home", label: "Home" },
+  { id: "dictionary", label: "Dictionary" },
   { id: "community", label: "Community" },
   { id: "chatrooms", label: "Chatrooms" },
   { id: "learning", label: "Learning" },
@@ -78,10 +80,14 @@ export default function TopBar({ activeTab, languageCode }: Props) {
           </Link>
           <nav className="flex items-center gap-1" aria-label="Primary">
             {tabs.map((tab) => {
-              let href = "/";
-              if (tab.id === "dictionary") href = "/#dictionary";
-              else if (tab.id !== "home" && languageCode) href = `/${languageCode}?tab=${tab.id}`;
-              else if (tab.id !== "home") href = `/mi?tab=${tab.id}`;
+              let href: string;
+              if (languageCode) {
+                href = tab.id === "dictionary" ? `/${languageCode}` : `/${languageCode}?tab=${tab.id}`;
+              } else if (tab.id === "dictionary") {
+                href = "/#dictionary";
+              } else {
+                href = `/mi?tab=${tab.id}`;
+              }
               return (
                 <Link
                   key={tab.id}
@@ -97,10 +103,14 @@ export default function TopBar({ activeTab, languageCode }: Props) {
             })}
           </nav>
         </div>
-        <div className="hidden items-center gap-3 md:flex">
-          <div className="flex items-center rounded-full border border-[#C3C8C1]/20 bg-[#31493B] px-4 py-2 text-sm text-[#B4CDB8]">
-            Search dictionary...
-          </div>
+        <div className="flex flex-wrap items-center justify-end gap-2 md:gap-3">
+          <Link
+            href="/#dictionary"
+            className="flex items-center rounded-full border border-[#C3C8C1]/20 bg-[#31493B] px-4 py-2 text-sm text-[#B4CDB8] transition hover:bg-[#3a5848]"
+          >
+            Search archives…
+          </Link>
+          <NotificationsBell />
           {checkedAuth && !isAuthenticated ? (
             <Link
               href="/auth"
