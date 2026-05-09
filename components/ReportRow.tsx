@@ -1,42 +1,82 @@
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import type { ReportTargetType } from "@/lib/types";
+
+export type ReportQueueItem = {
+  _id: string;
+  target_type?: ReportTargetType;
+  /** Preferred unified field when present */
+  content_type?: ReportTargetType;
+  content_id?: string;
+  target_id?: string;
+  language_code: string;
+  reason: string;
+  preview: string;
+  reporter_count: number;
+};
+
+function openInArchiveHref(report: ReportQueueItem): string {
+  const lc = (report.language_code || "").trim();
+  const ct = report.content_type || report.target_type;
+  if (!lc) return "/";
+  if (ct === "entry") return `/${lc}`;
+  if (ct === "post") return `/${lc}?tab=community&section=forum`;
+  if (ct === "poem") return `/${lc}?tab=community&section=poetry`;
+  if (ct === "story") return `/${lc}?tab=community&section=storytelling`;
+  if (ct === "message") return `/${lc}?tab=community&section=chat`;
+  return `/${lc}`;
+}
+
+const typeLabels: Partial<Record<ReportTargetType, string>> = {
+  entry: "Dictionary entry",
+  post: "Forum post",
+  message: "Chat message",
+  poem: "Poem",
+  story: "Story",
+};
+
 export default function ReportRow({
   report,
   onResolve,
+  disabled,
 }: {
-  report: {
-    _id: string;
-    target_type: string;
-    language_code: string;
-    reason: string;
-    preview: string;
-    reporter_count: number;
-  };
+  report: ReportQueueItem;
   onResolve: (id: string, action: "remove" | "keep") => Promise<void>;
+  disabled?: boolean;
 }) {
+  const ct = report.content_type || report.target_type || "post";
+  const typeLabel = typeLabels[ct] || String(ct);
+
   return (
-    <div className="rounded border border-slate-800 bg-slate-900 p-3">
-      <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
-        <span className="rounded bg-slate-800 px-2 py-1 uppercase">{report.target_type}</span>
-        <span className="rounded bg-slate-800 px-2 py-1">{report.language_code}</span>
-        <span className="rounded bg-slate-800 px-2 py-1">Reason: {report.reason}</span>
-        <span className="rounded bg-amber-900/50 px-2 py-1">Reports: {report.reporter_count}</span>
-      </div>
-      <p className="text-sm text-slate-200">{report.preview}</p>
-      <div className="mt-3 flex gap-2">
-        <button
-          type="button"
-          onClick={() => void onResolve(report._id, "remove")}
-          className="rounded bg-rose-700 px-3 py-1.5 text-xs hover:bg-rose-600"
+    <article className="rounded-3xl border border-[#C3C8C1]/35 bg-[#FBF9F4] p-5 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#C3C8C1]/35 pb-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-[#1B3022] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-white">
+            {typeLabel}
+          </span>
+          <span className="rounded-full bg-[#E8EFE9] px-3 py-1 font-mono text-xs font-medium text-[#1B3022]">{report.language_code}</span>
+          <span className="rounded-full border border-[#C3C8C1]/55 bg-[#F5F3EE] px-3 py-1 text-[11px] text-[#434843]">Reason · {report.reason}</span>
+          <span className="rounded-full bg-[#FFF4E8] px-3 py-1 text-[11px] font-semibold text-[#8A3918]">{report.reporter_count} flag(s)</span>
+        </div>
+        <Link
+          href={openInArchiveHref(report)}
+          className="text-xs font-semibold uppercase tracking-[0.12em] text-[#1B3022] underline-offset-4 hover:text-[#9F4026] hover:underline"
         >
-          Remove
-        </button>
-        <button
-          type="button"
-          onClick={() => void onResolve(report._id, "keep")}
-          className="rounded border border-slate-600 px-3 py-1.5 text-xs hover:bg-slate-800"
-        >
-          Keep
-        </button>
+          Open in site →
+        </Link>
       </div>
-    </div>
+      <p className="mt-4 text-sm leading-relaxed text-[#1B1C19]">{report.preview}</p>
+      <div className="mt-5 flex flex-wrap gap-2">
+        <Button type="button" variant="primary" size="sm" disabled={disabled} onClick={() => void onResolve(report._id, "remove")}>
+          Remove content
+        </Button>
+        <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={() => void onResolve(report._id, "keep")}>
+          Keep & dismiss
+        </Button>
+      </div>
+      <p className="mt-3 text-[11px] leading-relaxed text-[#757C76]">
+        Remove marks the targeted content inactive everywhere. Keep resolves all grouped flags for this target without deleting it.
+      </p>
+    </article>
   );
 }

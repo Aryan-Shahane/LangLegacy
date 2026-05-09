@@ -59,29 +59,28 @@ export default function LanguagePanel() {
   };
 
   return (
-    <section className="mt-12 space-y-4 rounded-xl border border-slate-800 bg-slate-900 p-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-50">Languages · mode & coverage</h2>
-          <p className="text-sm text-slate-400">
-            Overrides lock mode against automatic coverage recomputation until you clear the lock below.
-          </p>
-        </div>
-        <Button type="button" variant="outline" className="border-slate-600 text-slate-100" onClick={() => void load()}>
-          Refresh
+    <section className="space-y-4 rounded-3xl border border-[#C3C8C1]/35 bg-[#F5F3EE] p-6 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="max-w-xl text-sm text-[#434843]">
+          Overrides lock mode until you <span className="font-medium text-[#061B0E]">Clear lock</span>, then automatic coverage rules apply again.
+        </p>
+        <Button type="button" variant="outline" size="sm" onClick={() => void load()}>
+          Refresh list
         </Button>
-      </header>
-      {error ? <p className="rounded border border-rose-900/70 bg-rose-950/50 px-3 py-2 text-sm text-rose-200">{error}</p> : null}
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-left text-sm text-slate-200">
-          <thead className="border-b border-slate-700 text-[11px] uppercase tracking-[0.12em] text-slate-500">
+      </div>
+      {error ? (
+        <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p>
+      ) : null}
+      <div className="overflow-x-auto rounded-2xl border border-[#C3C8C1]/30 bg-[#FBF9F4]">
+        <table className="min-w-full text-left text-sm text-[#1B1C19]">
+          <thead className="border-b border-[#C3C8C1]/35 bg-[#F5F3EE] text-[11px] uppercase tracking-[0.12em] text-[#757C76]">
             <tr>
-              <th className="py-3 pr-4">Language</th>
+              <th className="px-4 py-3 pr-4">Language</th>
               <th className="py-3 pr-4">Code</th>
               <th className="py-3 pr-4">Coverage</th>
               <th className="py-3 pr-4">Mode</th>
               <th className="py-3 pr-4">Lock</th>
-              <th className="py-3">Actions</th>
+              <th className="px-4 py-3">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -89,19 +88,20 @@ export default function LanguagePanel() {
               const locked = lang.moderator_mode_lock === true;
               const b = busyCode === lang.code;
               return (
-                <tr key={lang.code} className="border-b border-slate-800 align-top">
-                  <td className="py-3 pr-4 font-medium text-white">{lang.name}</td>
-                  <td className="py-3 pr-4 font-mono text-slate-300">{lang.code}</td>
-                  <td className="py-3 pr-4">{pct(lang)}%</td>
-                  <td className="py-3 pr-4 capitalize">{lang.mode ?? "archive"}</td>
-                  <td className="py-3 pr-4">{locked ? "Override" : "Auto"}</td>
-                  <td className="py-3">
+                <tr key={lang.code} className="border-b border-[#E8EDE9] align-top last:border-0">
+                  <td className="px-4 py-3 pr-4 font-medium text-[#061B0E]">{lang.name}</td>
+                  <td className="py-3 pr-4 font-mono text-xs text-[#434843]">{lang.code}</td>
+                  <td className="py-3 pr-4 tabular-nums">{pct(lang)}%</td>
+                  <td className="py-3 pr-4 capitalize text-[#434843]">{lang.mode ?? "archive"}</td>
+                  <td className="py-3 pr-4 text-[#434843]">{locked ? "Override" : "Auto"}</td>
+                  <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-2">
                       <Button
                         type="button"
                         size="sm"
+                        variant="outline"
                         disabled={b}
-                        className="bg-slate-700 text-xs text-white hover:bg-slate-600"
+                        className="border-[#8C7851]/35 text-xs"
                         onClick={() => void patch(lang.code, { mode: "archive" })}
                       >
                         Archive
@@ -109,18 +109,19 @@ export default function LanguagePanel() {
                       <Button
                         type="button"
                         size="sm"
+                        variant="pill"
                         disabled={b}
-                        className="bg-emerald-800 text-xs hover:bg-emerald-700"
+                        className="text-xs"
                         onClick={() => void patch(lang.code, { mode: "full" })}
                       >
                         Full
                       </Button>
                       <Button
                         type="button"
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         disabled={b || !locked}
-                        className="border-slate-600 text-xs text-slate-100"
+                        className="text-xs text-[#9F4026]"
                         onClick={() => void patch(lang.code, { moderator_mode_lock: false })}
                       >
                         Clear lock
@@ -132,7 +133,7 @@ export default function LanguagePanel() {
             })}
           </tbody>
         </table>
-        {!rows.length ? <p className="py-4 text-sm text-slate-400">No languages loaded.</p> : null}
+        {!rows.length ? <p className="p-6 text-center text-sm text-[#757C76]">No languages loaded.</p> : null}
       </div>
     </section>
   );
