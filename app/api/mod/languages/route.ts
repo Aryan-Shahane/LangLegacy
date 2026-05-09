@@ -5,42 +5,39 @@ import { resolveEditableLanguage } from "@/lib/languageDocumentResolve";
 
 export const dynamic = "force-dynamic";
 
-/** If `params` is empty in runtime, recover from `/api/languages/{code}` (Next edge cases). */
-function languageSegmentFromUrl(req: NextRequest): string | null {
-  const segs = req.nextUrl.pathname.split("/").filter(Boolean);
-  const ix = segs.indexOf("languages");
-  const seg = ix >= 0 ? segs[ix + 1] : "";
-  const s = typeof seg === "string" ? seg.trim() : "";
-  return s ? decodeURIComponent(s) : null;
-}
-
-export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+/**
+ * Stable moderator entrypoint for language mode updates (avoids dynamic `/api/languages/[id]` routing quirks).
+ */
+export async function POST(req: NextRequest) {
   try {
     await requireModeratorAccess();
-    const params = await ctx.params;
-    const id =
-      typeof params?.id === "string" && params.id.trim().length > 0
-        ? params.id
-        : languageSegmentFromUrl(req) ?? "";
+
     const body = (await req.json()) as {
+      language_code?: string;
+      code?: string;
       mode?: string;
       moderator_mode_lock?: boolean;
     };
 
-    const mode = body.mode === "full" || body.mode === "archive" ? body.mode : null;
-    const clearLockOnly =
-      mode === null && body.moderator_mode_lock === false;
+    const rawCode = (typeof body.language_code === "string" ? body.language_code : body.code || "").trim();
 
-    const resolved = await resolveEditableLanguage(id);
+    const mode = body.mode === "full" || body.mode === "archive" ? body.mode : null;
+    const clearLockOnly = mode === null && body.moderator_mode_lock === false;
+
+    if (!rawCode) {
+      return NextResponse.json({ error: "language_code is required." }, { status: 400 });
+    }
+
+    if (!mode && !clearLockOnly) {
+      return NextResponse.json({ error: "Provide mode or moderator_mode_lock: false." }, { status: 400 });
+    }
+
+    const resolved = await resolveEditableLanguage(rawCode);
     if (!resolved) {
       return NextResponse.json({ error: "Language not found" }, { status: 404 });
     }
 
     const { doc, couchId } = resolved;
-
-    if (!mode && !clearLockOnly) {
-      return NextResponse.json({ error: "Provide mode or moderator_mode_lock: false" }, { status: 400 });
-    }
 
     if (clearLockOnly) {
       await putDocument("languages", couchId, {

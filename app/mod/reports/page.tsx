@@ -5,8 +5,16 @@ import { useEffect, useState } from "react";
 import ReportRow, { type ReportQueueItem } from "@/components/ReportRow";
 import { Button } from "@/components/ui/button";
 
+type QueuedReport = ReportQueueItem & { ui_resolved_remove?: boolean };
+
+function reportGroupKey(r: ReportQueueItem): string {
+  const ct = r.content_type || r.target_type || "";
+  const cid = r.content_id || r.target_id || "";
+  return `${ct}:${cid}`;
+}
+
 export default function ModReportsPage() {
-  const [reports, setReports] = useState<ReportQueueItem[]>([]);
+  const [reports, setReports] = useState<QueuedReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +26,7 @@ export default function ModReportsPage() {
       const res = await fetch("/api/mod/reports", { cache: "no-store" });
       const json = (await res.json()) as ReportQueueItem[] | { error?: string };
       if (!res.ok) throw new Error("error" in json ? json.error || "Failed to load reports" : "Failed to load reports");
-      setReports(Array.isArray(json) ? json : []);
+      setReports(Array.isArray(json) ? (json as QueuedReport[]) : []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load reports");
     } finally {
@@ -32,14 +40,35 @@ export default function ModReportsPage() {
   }, []);
 
   const resolve = async (id: string, action: "remove" | "keep") => {
+    const pivot = reports.find((r) => r._id === id);
+    if (!pivot) return;
+    const gk = reportGroupKey(pivot);
+
     setBusy(true);
+    setError(null);
     try {
-      await fetch(`/api/mod/reports/${id}/resolve`, {
+      const res = await fetch(`/api/mod/reports/${encodeURIComponent(id)}/resolve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action }),
       });
-      await loadReports();
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(j.error || `Resolve failed (${res.status})`);
+
+      if (action === "remove") {
+        setReports((prev) =>
+          prev.map((r) =>
+            reportGroupKey(r) === gk ? { ...r, ui_resolved_remove: true as const } : r,
+          ),
+        );
+        window.setTimeout(() => {
+          void loadReports();
+        }, 1100);
+      } else {
+        await loadReports();
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Resolve failed");
     } finally {
       setBusy(false);
     }
@@ -71,7 +100,13 @@ export default function ModReportsPage() {
 
       <div className="space-y-4">
         {reports.map((report) => (
-          <ReportRow key={report._id} report={report} disabled={busy} onResolve={resolve} />
+          <ReportRow
+            key={report._id}
+            report={report}
+            disabled={busy || Boolean(report.ui_resolved_remove)}
+            resolvedRemove={Boolean(report.ui_resolved_remove)}
+            onResolve={resolve}
+          />
         ))}
       </div>
 

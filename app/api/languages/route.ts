@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllDocuments, getDocument, putDocument } from "@/lib/cloudant";
+import { ARCHIVE_DEMO_LANGUAGE } from "@/lib/archiveDemoLanguage";
 import type { Language } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+export { ARCHIVE_DEMO_LANGUAGE };
 
 function coerceLanguage(raw: Record<string, unknown>): Language {
   const storedMode =
@@ -31,25 +34,6 @@ function coerceLanguage(raw: Record<string, unknown>): Language {
     updated_at: typeof raw.updated_at === "string" ? raw.updated_at : null,
   };
 }
-
-/** Merged into GET when not in Cloudant; use `/arq` + Learn tab to preview archive lock UI. */
-export const ARCHIVE_DEMO_LANGUAGE: Language = {
-  _id: "arq",
-  type: "language",
-  name: "Aruqa Archive (demo)",
-  code: "arq",
-  region: "Demo · fictional",
-  description: "Open /arq → Learn tab to see archive lock + coverage bar.",
-  native_script: "Latin",
-  speaker_count: null,
-  entry_count: 300,
-  translated_entry_count: 102,
-  translation_coverage: 0.34,
-  mode: "archive",
-  contributor_count: 6,
-  created_at: "2026-05-08T00:00:00Z",
-  updated_at: "2026-05-09T00:00:00Z",
-};
 
 const FALLBACK_LANGUAGES: Language[] = [
   {

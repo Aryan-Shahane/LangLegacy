@@ -39,16 +39,26 @@ export default function ReportRow({
   report,
   onResolve,
   disabled,
+  resolvedRemove,
 }: {
   report: ReportQueueItem;
   onResolve: (id: string, action: "remove" | "keep") => Promise<void>;
   disabled?: boolean;
+  /** Content was removed (moderator queue feedback). */
+  resolvedRemove?: boolean;
 }) {
   const ct = report.content_type || report.target_type || "post";
   const typeLabel = typeLabels[ct] || String(ct);
+  const grey = Boolean(resolvedRemove);
 
   return (
-    <article className="rounded-3xl border border-[#C3C8C1]/35 bg-[#FBF9F4] p-5 shadow-sm">
+    <article
+      className={
+        grey
+          ? "pointer-events-none rounded-3xl border border-[#C9C9C9]/65 bg-[#E8E6E2]/90 p-5 opacity-65 shadow-inner grayscale-[0.35]"
+          : "rounded-3xl border border-[#C3C8C1]/35 bg-[#FBF9F4] p-5 shadow-sm"
+      }
+    >
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#C3C8C1]/35 pb-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-[#1B3022] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-white">
@@ -65,18 +75,30 @@ export default function ReportRow({
           Open in site →
         </Link>
       </div>
-      <p className="mt-4 text-sm leading-relaxed text-[#1B1C19]">{report.preview}</p>
-      <div className="mt-5 flex flex-wrap gap-2">
-        <Button type="button" variant="primary" size="sm" disabled={disabled} onClick={() => void onResolve(report._id, "remove")}>
-          Remove content
-        </Button>
-        <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={() => void onResolve(report._id, "keep")}>
-          Keep & dismiss
-        </Button>
-      </div>
-      <p className="mt-3 text-[11px] leading-relaxed text-[#757C76]">
-        Remove marks the targeted content inactive everywhere. Keep resolves all grouped flags for this target without deleting it.
+      <p
+        className={
+          grey ? "mt-4 text-sm leading-relaxed text-[#6E7470]" : "mt-4 text-sm leading-relaxed text-[#1B1C19]"
+        }
+      >
+        {report.preview}
       </p>
+      {grey ? (
+        <p className="mt-5 text-xs font-semibold uppercase tracking-[0.14em] text-[#878C87]">Content removed · refreshing queue…</p>
+      ) : (
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Button type="button" variant="primary" size="sm" disabled={disabled} onClick={() => void onResolve(report._id, "remove")}>
+            Remove content
+          </Button>
+          <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={() => void onResolve(report._id, "keep")}>
+            Keep & dismiss
+          </Button>
+        </div>
+      )}
+      {!grey ? (
+        <p className="mt-3 text-[11px] leading-relaxed text-[#757C76]">
+          Remove marks the targeted content inactive everywhere. Keep resolves all grouped flags for this target without deleting it.
+        </p>
+      ) : null}
     </article>
   );
 }

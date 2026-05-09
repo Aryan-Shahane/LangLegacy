@@ -41,10 +41,10 @@ export default function LanguagePanel() {
     setBusyCode(code);
     setError(null);
     try {
-      const res = await fetch(`/api/languages/${encodeURIComponent(code)}`, {
-        method: "PATCH",
+      const res = await fetch("/api/mod/languages", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ language_code: code, ...payload }),
       });
       if (!res.ok) {
         const j = (await res.json().catch(() => ({}))) as { error?: string };
@@ -62,7 +62,8 @@ export default function LanguagePanel() {
     <section className="space-y-4 rounded-3xl border border-[#C3C8C1]/35 bg-[#F5F3EE] p-6 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="max-w-xl text-sm text-[#434843]">
-          Overrides lock mode until you <span className="font-medium text-[#061B0E]">Clear lock</span>, then automatic coverage rules apply again.
+          <span className="font-medium text-[#061B0E]">Archive</span> / <span className="font-medium text-[#061B0E]">Full</span> overrides mode until{" "}
+          <span className="font-medium text-[#061B0E]">Clear lock</span>, then automatic coverage rules apply again.
         </p>
         <Button type="button" variant="outline" size="sm" onClick={() => void load()}>
           Refresh list
@@ -79,7 +80,6 @@ export default function LanguagePanel() {
               <th className="py-3 pr-4">Code</th>
               <th className="py-3 pr-4">Coverage</th>
               <th className="py-3 pr-4">Mode</th>
-              <th className="py-3 pr-4">Lock</th>
               <th className="px-4 py-3">Actions</th>
             </tr>
           </thead>
@@ -93,7 +93,6 @@ export default function LanguagePanel() {
                   <td className="py-3 pr-4 font-mono text-xs text-[#434843]">{lang.code}</td>
                   <td className="py-3 pr-4 tabular-nums">{pct(lang)}%</td>
                   <td className="py-3 pr-4 capitalize text-[#434843]">{lang.mode ?? "archive"}</td>
-                  <td className="py-3 pr-4 text-[#434843]">{locked ? "Override" : "Auto"}</td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-2">
                       <Button
