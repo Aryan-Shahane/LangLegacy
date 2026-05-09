@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ChatRoom from "@/components/ChatRoom";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import type { Room, UserRole } from "@/lib/types";
 
 export default function RoomList({
@@ -18,51 +21,103 @@ export default function RoomList({
   const [activeId, setActiveId] = useState<string>(rooms[0]?._id || "");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [busyCreate, setBusyCreate] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!activeId && rooms[0]?._id) setActiveId(rooms[0]._id);
+  }, [rooms, activeId]);
 
   const active = rooms.find((r) => r._id === activeId) || rooms[0] || null;
+  const memberCount = useMemo(
+    () => (id: string, base: number) => {
+      const seed = Array.from(id).reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+      return base + (seed % 47);
+    },
+    []
+  );
 
   return (
-    <div className="space-y-3">
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {rooms.map((room) => (
-          <button
-            key={room._id}
-            type="button"
-            onClick={() => setActiveId(room._id)}
-            className={`rounded border px-3 py-2 text-left ${
-              room._id === active?._id ? "border-cyan-600 bg-cyan-950/30" : "border-slate-800 bg-slate-900"
-            }`}
-          >
-            <p className="text-sm font-medium text-slate-100">{room.name}</p>
-            <p className="text-xs text-slate-500">{room.description}</p>
-          </button>
-        ))}
+    <div className="rounded-2xl bg-gradient-to-b from-[#CC8E7A] via-[#8A6F88] to-[#F0A482] p-5">
+      <div className="grid gap-4 xl:grid-cols-[0.44fr_0.56fr]">
+        <section className="space-y-3">
+          <div className="flex items-end justify-between">
+            <h2 className="font-serif text-5xl leading-tight text-[#1F1C1C]">Discover Circles</h2>
+            <button type="button" className="text-sm font-semibold uppercase tracking-wide text-[#633D3A]">
+              View All
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {rooms.map((room) => {
+              const activeNow = room._id === active?._id;
+              return (
+                <Card
+                  key={room._id}
+                  className={`cursor-pointer p-5 transition-all ${activeNow ? "border-[#C4622D] shadow-md" : "hover:border-[#C4622D]/45"}`}
+                  onClick={() => setActiveId(room._id)}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="font-serif text-[40px] leading-tight text-[#1F1C1C]">{room.name}</h3>
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${activeNow ? "bg-[#D0E9D4] text-[#2E5E46]" : "bg-[#F0EEE9] text-[#676F69]"}`}>
+                      {activeNow ? "Active Now" : `${memberCount(room._id, 4) % 25} Online`}
+                    </span>
+                  </div>
+                  <p className="mt-2 line-clamp-2 text-[15px] leading-relaxed text-[#454A45]">{room.description || "Open language practice session."}</p>
+                  <div className="mt-4 flex items-center justify-between">
+                    <p className="text-sm font-semibold text-[#454A45]">{memberCount(room._id, 20)} Members</p>
+                    <Button size="sm" variant={activeNow ? "primary" : "outline"} className={activeNow ? "" : "border-[#C4622D]/50 text-[#7A3920]"}>
+                      {activeNow ? "Entering..." : "Join Room"}
+                    </Button>
+                  </div>
+                </Card>
+              );
+            })}
+            {!rooms.length ? (
+              <Card className="p-5 text-center">
+                <p className="font-serif text-2xl text-[#1F1C1C]">No circles yet</p>
+                <p className="mt-1 text-sm text-[#5E635E]">Create one to begin real-time language chat.</p>
+              </Card>
+            ) : null}
+          </div>
+        </section>
+
+        <section>{active ? <ChatRoom room={active} languageCode={languageCode} /> : null}</section>
       </div>
+
       {(viewerRole === "moderator" || viewerRole === "admin") && (
-        <div className="panel space-y-2">
-          <p className="text-xs font-medium text-slate-300">Create room (moderator)</p>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Room name"
-            className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5"
-          />
-          <input
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Description"
-            className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5"
-          />
-          <button
-            type="button"
-            onClick={() => void onCreateRoom(name, description)}
-            className="rounded bg-amber-700 px-3 py-1.5 text-sm hover:bg-amber-600"
-          >
-            Create room
-          </button>
+        <div className="mt-4">
+          <Card className="space-y-3 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#737973]">Create Circle</p>
+            <div className="grid gap-2 md:grid-cols-2">
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Room name" />
+              <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                disabled={busyCreate}
+                onClick={async () => {
+                  setCreateError(null);
+                  setBusyCreate(true);
+                  try {
+                    await onCreateRoom(name, description);
+                    setName("");
+                    setDescription("");
+                  } catch (err) {
+                    setCreateError(err instanceof Error ? err.message : "Failed to create room.");
+                  } finally {
+                    setBusyCreate(false);
+                  }
+                }}
+              >
+                {busyCreate ? "Creating..." : "Create room"}
+              </Button>
+              {createError ? <p className="text-xs text-rose-700">{createError}</p> : null}
+            </div>
+          </Card>
         </div>
       )}
-      {active ? <ChatRoom room={active} languageCode={languageCode} /> : null}
     </div>
   );
 }

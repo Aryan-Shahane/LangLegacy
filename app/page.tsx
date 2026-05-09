@@ -1,11 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import SiteFooter from "@/components/SiteFooter";
 import TopBar from "@/components/TopBar";
 import LanguageCard from "@/components/LanguageCard";
 import SearchBar from "@/components/SearchBar";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import type { Language } from "@/lib/types";
+import mauiFishImage from "@/Screenshot 2026-05-09 at 3.22.38 AM.png";
 
 const fallbackLanguages: Language[] = [
   {
@@ -50,7 +56,7 @@ const fallbackLanguages: Language[] = [
   },
 ];
 
-type LandingTab = "home" | "dictionary" | "community" | "chatrooms" | "learning";
+type HomeTab = "dictionary" | "community" | "chatrooms" | "learning";
 
 function DictionaryPanel({
   loading,
@@ -89,12 +95,66 @@ function DictionaryPanel({
   );
 }
 
-export default function HomePage() {
+function CommunityPanel() {
+  return (
+    <section className="px-6 py-14 md:px-12">
+      <Card className="mx-auto max-w-6xl p-8">
+        <p className="text-xs uppercase tracking-[0.25em] text-[#5A665F]">Community</p>
+        <h2 className="mt-3 font-serif text-4xl text-[#1F2E27]">Stories, recordings, and language memory</h2>
+        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[#4F5D55]">
+          Discover community posts, oral history snapshots, and collaborative contributions that keep endangered languages active and visible.
+        </p>
+        <Link href="/mi?tab=community" className="mt-6 inline-block">
+          <Button>Open Community</Button>
+        </Link>
+      </Card>
+    </section>
+  );
+}
+
+function ChatroomsPanel() {
+  return (
+    <section className="px-6 py-14 md:px-12">
+      <Card className="mx-auto max-w-6xl p-8">
+        <p className="text-xs uppercase tracking-[0.25em] text-[#5A665F]">Chatrooms</p>
+        <h2 className="mt-3 font-serif text-4xl text-[#1F2E27]">Live practice spaces by language</h2>
+        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[#4F5D55]">
+          Join focused rooms for pronunciation, translation, and daily vocabulary drills with other learners and community speakers.
+        </p>
+        <Link href="/mi?tab=chatrooms" className="mt-6 inline-block">
+          <Button>Open Chatrooms</Button>
+        </Link>
+      </Card>
+    </section>
+  );
+}
+
+function LearningPanel() {
+  return (
+    <section className="px-6 py-14 md:px-12">
+      <Card className="mx-auto max-w-6xl p-8">
+        <p className="text-xs uppercase tracking-[0.25em] text-[#5A665F]">Learning</p>
+        <h2 className="mt-3 font-serif text-4xl text-[#1F2E27]">Guided flashcards and practice sessions</h2>
+        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[#4F5D55]">
+          Build confidence through lightweight study rounds with progress tracking and recall-based practice tailored to each language.
+        </p>
+        <Link href="/mi?tab=learning" className="mt-6 inline-block">
+          <Button>Open Learning</Button>
+        </Link>
+      </Card>
+    </section>
+  );
+}
+
+function HomePageContent() {
   const [languages, setLanguages] = useState<Language[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const activeTab: LandingTab = "home";
+  const searchParams = useSearchParams();
+  const tabFromUrl = (searchParams.get("tab") || "dictionary").toLowerCase();
+  const activeTab: HomeTab =
+    tabFromUrl === "community" || tabFromUrl === "chatrooms" || tabFromUrl === "learning" ? tabFromUrl : "dictionary";
 
   useEffect(() => {
     let mounted = true;
@@ -158,7 +218,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      <DictionaryPanel loading={loading} filteredLanguages={filteredLanguages} error={error} />
+      {activeTab === "dictionary" ? (
+        <DictionaryPanel loading={loading} filteredLanguages={filteredLanguages} error={error} />
+      ) : null}
+      {activeTab === "community" ? <CommunityPanel /> : null}
+      {activeTab === "chatrooms" ? <ChatroomsPanel /> : null}
+      {activeTab === "learning" ? <LearningPanel /> : null}
 
       <section className="bg-[#1B3022] px-6 py-14 text-[#F4EEE5] md:px-12">
         <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-2">
@@ -179,11 +244,21 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          <div className="h-[360px] rounded-2xl bg-gradient-to-br from-[#3B3F42] via-[#151A1E] to-[#07090B]" />
+          <div className="relative h-[360px] overflow-hidden rounded-2xl">
+            <Image src={mauiFishImage} alt="Legend of Maui's Fish artwork" fill className="object-cover" />
+          </div>
         </div>
       </section>
 
       <SiteFooter />
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#FBF9F4]" />}>
+      <HomePageContent />
+    </Suspense>
   );
 }

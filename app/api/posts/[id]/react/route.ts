@@ -5,15 +5,16 @@ import type { Post } from "@/lib/types";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = (await req.json()) as { emoji?: string };
     const emoji = (body.emoji || "").trim();
     if (!emoji) {
       return NextResponse.json({ error: "emoji is required" }, { status: 400 });
     }
-    const post = (await getDocument("posts", params.id)) as Post | null;
+    const post = (await getDocument("posts", id)) as Post | null;
     if (!post || typeof (post as unknown as { _rev?: string })._rev !== "string") {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
@@ -32,7 +33,7 @@ export async function POST(
       delete users[emoji];
     }
 
-    const updated = await putDocument("posts", params.id, {
+    const updated = await putDocument("posts", id, {
       ...(post as unknown as Record<string, unknown>),
       reactions,
       reaction_users: users,

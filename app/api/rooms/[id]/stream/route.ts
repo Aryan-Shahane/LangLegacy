@@ -6,8 +6,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const encoder = new TextEncoder();
   let lastSeen = req.nextUrl.searchParams.get("since") || "";
 
@@ -23,7 +24,7 @@ export async function GET(
         try {
           const docs = (await findDocuments(
             "messages",
-            { type: "message", room_id: params.id, status: "active" },
+            { type: "message", room_id: id, status: "active" },
             100,
             0
           )) as Message[];

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const EMOJIS = ["❤️", "🙌", "👏", "🔥"];
 
@@ -23,17 +25,19 @@ export default function ReactionBar({
   };
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2 border-t border-[#C3C8C1]/40 pt-3">
       {EMOJIS.map((emoji) => (
-        <button
+        <Button
           key={emoji}
           type="button"
+          size="sm"
+          variant="outline"
           disabled={busy === emoji}
           onClick={() => void handleReact(emoji)}
-          className="rounded-full border border-slate-700 px-2 py-1 text-xs hover:bg-slate-800 disabled:opacity-50"
+          className={cn("min-w-16 justify-center text-xs disabled:opacity-50", reactions[emoji] ? "border-[#9F4026]/35 bg-[#FFDBD1]/35" : "")}
         >
           {emoji} {reactions[emoji] || 0}
-        </button>
+        </Button>
       ))}
     </div>
   );

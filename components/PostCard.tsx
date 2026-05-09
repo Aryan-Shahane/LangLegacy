@@ -2,6 +2,7 @@
 
 import ReactionBar from "@/components/ReactionBar";
 import ReportModal from "@/components/ReportModal";
+import { Card } from "@/components/ui/card";
 import type { Post } from "@/lib/types";
 
 export default function PostCard({
@@ -13,17 +14,19 @@ export default function PostCard({
   onReact: (emoji: string) => Promise<void>;
   onReport: (payload: { reason: "inaccurate" | "offensive" | "spam" | "other"; details: string }) => Promise<void>;
 }) {
+  const when = new Date(post.created_at).toLocaleString();
+
   return (
-    <article className="panel space-y-2">
+    <Card className="space-y-4 p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-slate-100">{post.author_name}</p>
-          <p className="text-xs text-slate-500">{new Date(post.created_at).toLocaleString()}</p>
+          <p className="font-serif text-2xl leading-tight text-[#061B0E]">{post.author_name}</p>
+          <p className="text-xs uppercase tracking-[0.12em] text-[#737973]">{when}</p>
         </div>
         <ReportModal compact onSubmit={onReport} />
       </div>
-      <p className="whitespace-pre-wrap text-sm text-slate-200">{post.body}</p>
+      <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-[#1B1C19]">{post.body}</p>
       <ReactionBar reactions={post.reactions || {}} onReact={onReact} />
-    </article>
+    </Card>
   );
 }

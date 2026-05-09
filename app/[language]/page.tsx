@@ -4,7 +4,6 @@ import { getSessionFromCookie } from "@/lib/auth";
 import SiteFooter from "@/components/SiteFooter";
 import TopBar from "@/components/TopBar";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { getDocument } from "@/lib/cloudant";
 import type { Language } from "@/lib/types";
 import LanguageTabsPanel from "@/components/LanguageTabsPanel";
@@ -62,10 +61,10 @@ export default async function LanguageDictionaryPage({
       <section className="px-6 pb-16 md:px-12">
         <div className="mx-auto max-w-6xl">
           <LanguageTabsPanel languageCode={language} viewerRole={viewer?.role || "user"} />
-          <Card className="mt-6 grid gap-4 bg-[#1B3022] p-6 text-[#D0E9D4] md:grid-cols-[1.2fr_0.8fr]">
+          <div className="mt-6 grid gap-4 rounded-2xl border border-[#8C7851]/20 bg-[#1B3022] p-6 text-[#D0E9D4] md:grid-cols-[1.2fr_0.8fr]">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-[#B4CDB8]">Dialect Spotlight</p>
-              <h2 className="mt-3 font-serif text-4xl text-white">Preserving {languageDoc?.region || "Regional"} Dialects</h2>
+              <h2 className="mt-3 font-serif text-4xl leading-tight text-white">Preserving {languageDoc?.region || "Regional"} Dialects</h2>
               <p className="mt-3 max-w-xl text-sm text-[#D0E9D4]/85">
                 Explore oral histories and place-based pronunciation traditions that keep ancestral language forms alive.
               </p>
@@ -76,7 +75,7 @@ export default async function LanguageDictionaryPage({
               </Link>
             </div>
             <div className="h-52 rounded-xl bg-gradient-to-br from-[#5A5E62] via-[#2C3236] to-[#0F1418]" />
-          </Card>
+          </div>
         </div>
       </section>
 

@@ -5,16 +5,17 @@ import type { Report } from "@/lib/types";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const moderator = await requireModeratorOrAdmin();
     const body = (await req.json()) as { action?: "remove" | "keep" };
     if (body.action !== "remove" && body.action !== "keep") {
       return NextResponse.json({ error: "action must be remove or keep" }, { status: 400 });
     }
 
-    const report = (await getDocument("reports", params.id)) as (Report & { _rev?: string }) | null;
+    const report = (await getDocument("reports", id)) as (Report & { _rev?: string }) | null;
     if (!report || typeof report._rev !== "string") {
       return NextResponse.json({ error: "Report not found" }, { status: 404 });
     }
