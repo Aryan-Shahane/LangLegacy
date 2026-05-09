@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDocument, putDocument } from "@/lib/cloudant";
-import { getViewerIdentityFromHeaders } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import type { Post } from "@/lib/types";
 
 export async function POST(
@@ -19,7 +19,7 @@ export async function POST(
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    const viewer = getViewerIdentityFromHeaders(req.headers);
+    const viewer = await requireSession();
     const users = { ...(post.reaction_users || {}) };
     const list = new Set(users[emoji] || []);
     if (list.has(viewer.userId)) list.delete(viewer.userId);
@@ -40,6 +40,9 @@ export async function POST(
     });
     return NextResponse.json({ ok: true, updated, reactions });
   } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to react to post" },
       { status: 500 }

@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { findDocuments, saveDocument } from "@/lib/cloudant";
-import { getViewerIdentityFromHeaders } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import type { Message } from "@/lib/types";
 
 export async function GET(
@@ -37,7 +37,7 @@ export async function POST(
     if (!body.language_code || !text) {
       return NextResponse.json({ error: "language_code and body are required" }, { status: 400 });
     }
-    const viewer = getViewerIdentityFromHeaders(req.headers);
+    const viewer = await requireSession();
     const message: Message = {
       _id: randomUUID(),
       type: "message",
@@ -53,6 +53,9 @@ export async function POST(
     const saved = await saveDocument("messages", message as unknown as Record<string, unknown>);
     return NextResponse.json({ ok: true, saved });
   } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to send message" },
       { status: 500 }

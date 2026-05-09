@@ -1,5 +1,6 @@
-import { jwtVerify } from "jose";
+import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 import { getDocument } from "@/lib/cloudant";
 import type { User, UserRole } from "@/lib/types";
 
@@ -14,6 +15,9 @@ const FALLBACK_USER: SessionIdentity = {
   name: "Anonymous",
   role: "user",
 };
+
+const SESSION_COOKIE = "session";
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 
 export function getViewerIdentityFromHeaders(headers: Headers): SessionIdentity {
   const raw = headers.get("x-ll-user");
@@ -31,7 +35,7 @@ export function getViewerIdentityFromHeaders(headers: Headers): SessionIdentity 
 
 export async function getSessionFromCookie(): Promise<SessionIdentity | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
   const secret = process.env.AUTH_SECRET;
   if (!token || !secret) return null;
   try {
@@ -56,4 +60,52 @@ export async function requireModeratorOrAdmin(): Promise<SessionIdentity> {
     throw new Error("Forbidden");
   }
   return viewer;
+}
+
+export async function requireSession(): Promise<SessionIdentity> {
+  const viewer = await getSessionFromCookie();
+  if (!viewer) {
+    throw new Error("Unauthorized");
+  }
+  return viewer;
+}
+
+export async function createSessionToken(identity: SessionIdentity): Promise<string> {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) {
+    throw new Error("Missing AUTH_SECRET");
+  }
+  return new SignJWT({
+    user_id: identity.userId,
+    name: identity.name,
+    role: identity.role,
+  })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime(`${SESSION_TTL_SECONDS}s`)
+    .sign(new TextEncoder().encode(secret));
+}
+
+export function setSessionCookie(response: NextResponse, token: string): void {
+  response.cookies.set({
+    name: SESSION_COOKIE,
+    value: token,
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: SESSION_TTL_SECONDS,
+  });
+}
+
+export function clearSessionCookie(response: NextResponse): void {
+  response.cookies.set({
+    name: SESSION_COOKIE,
+    value: "",
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 0,
+  });
 }

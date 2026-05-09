@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDocument } from "@/lib/cloudant";
-import { getViewerIdentityFromHeaders } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import type { LearningProgress } from "@/lib/types";
 
 export async function GET(req: NextRequest) {
@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     if (!languageCode) {
       return NextResponse.json({ error: "language_code is required" }, { status: 400 });
     }
-    const viewer = getViewerIdentityFromHeaders(req.headers);
+    const viewer = await requireSession();
     const id = `${viewer.userId}:${languageCode}`;
     const progress = (await getDocument("learning_progress", id)) as LearningProgress | null;
     return NextResponse.json(
@@ -26,6 +26,9 @@ export async function GET(req: NextRequest) {
       }
     );
   } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to load learning progress" },
       { status: 500 }

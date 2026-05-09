@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getSessionFromCookie } from "@/lib/auth";
 import SiteFooter from "@/components/SiteFooter";
 import TopBar from "@/components/TopBar";
@@ -18,6 +19,9 @@ export default async function LanguageDictionaryPage({
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const languageDoc = (await getDocument("languages", language)) as Language | null;
   const viewer = await getSessionFromCookie();
+  if (!viewer) {
+    redirect("/auth");
+  }
   const dictionaryTitle = languageDoc?.name ? `${languageDoc.name} Dictionary` : `${language} Dictionary`;
   const activeTab = (resolvedSearchParams?.tab || "dictionary").toLowerCase();
   const tabs = [

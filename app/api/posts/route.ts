@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { findDocuments, saveDocument } from "@/lib/cloudant";
-import { getViewerIdentityFromHeaders } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import type { Post } from "@/lib/types";
 
 export async function GET(req: NextRequest) {
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "language_code and body are required" }, { status: 400 });
     }
 
-    const viewer = getViewerIdentityFromHeaders(req.headers);
+    const viewer = await requireSession();
     const payload: Post = {
       _id: randomUUID(),
       type: "post",
@@ -54,6 +54,9 @@ export async function POST(req: NextRequest) {
     const saved = await saveDocument("posts", payload as unknown as Record<string, unknown>);
     return NextResponse.json({ ok: true, saved });
   } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to create post" },
       { status: 500 }
