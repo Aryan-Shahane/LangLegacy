@@ -58,8 +58,8 @@ export default function RoomList({
     setShowList(false);
 
     const params = new URLSearchParams(searchParams.toString());
-    params.set("tab", "community");
-    params.set("section", "chat");
+    params.set("tab", "chatrooms");
+    params.delete("section");
     params.set("room", id);
     router.push(`/${languageCode}?${params.toString()}`);
   };

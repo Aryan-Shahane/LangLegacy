@@ -2,12 +2,37 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import SiteFooter from "@/components/SiteFooter";
 import TopBar from "@/components/TopBar";
 import mauiFishImage from "@/Screenshot 2026-05-09 at 3.22.38 AM.png";
 import { Play, Mic, FileText, CheckCircle2, ShieldCheck, BookOpen, Volume2 } from "lucide-react";
 
+type LangStats = { count: number; entries: number; contributors: number };
+
+function useStats(): LangStats {
+  const [stats, setStats] = useState<LangStats>({ count: 0, entries: 0, contributors: 0 });
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch("/api/languages", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as Array<{ entry_count?: number; contributor_count?: number }>;
+        setStats({
+          count: data.length,
+          entries: data.reduce((s, l) => s + (l.entry_count || 0), 0),
+          contributors: data.reduce((s, l) => s + (l.contributor_count || 0), 0),
+        });
+      } catch { /* ignore */ }
+    };
+    void load();
+  }, []);
+  return stats;
+}
+
+
 export default function HomePage() {
+  const stats = useStats();
   return (
     <div className="bg-[#F5F4F0] text-[#1B1C19] min-h-screen font-sans">
       <TopBar activeTab="dictionary" />
@@ -33,7 +58,7 @@ export default function HomePage() {
             Bridging the chasm that grew between our elders&apos; wisdom and the youth&apos;s curiosity through an audio-first archive of endangered languages.
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-            <Link href="/mi?tab=dictionary" className="inline-flex items-center justify-center rounded-full bg-[#B24A2D] px-8 py-6 text-[15px] font-semibold text-white hover:bg-[#8A3620] transition-colors">
+            <Link href="/dialects" className="inline-flex items-center justify-center rounded-full bg-[#B24A2D] px-8 py-6 text-[15px] font-semibold text-white hover:bg-[#8A3620] transition-colors">
               Explore Archives
             </Link>
             <Link href="/auth" className="inline-flex items-center justify-center border border-[#E3DFD6] rounded-full bg-white/10 px-8 py-6 text-[15px] font-semibold text-white backdrop-blur-sm hover:bg-white/20 transition-colors">
@@ -43,20 +68,19 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Stats Section */}
       <section className="border-b border-[#E3DFD6] bg-[#FBF9F4] py-12">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-around gap-8 px-6 text-center md:px-12">
           <div>
-            <p className="font-serif text-5xl text-[#8A3620]">4,200+</p>
-            <p className="mt-2 text-xs font-bold uppercase tracking-widest text-[#5A665F]">Active Speakers</p>
+            <p className="font-serif text-5xl text-[#8A3620]">{stats.contributors || "—"}</p>
+            <p className="mt-2 text-xs font-bold uppercase tracking-widest text-[#5A665F]">Contributors</p>
           </div>
           <div>
-            <p className="font-serif text-5xl text-[#1B3022]">156</p>
+            <p className="font-serif text-5xl text-[#1B3022]">{stats.count || "—"}</p>
             <p className="mt-2 text-xs font-bold uppercase tracking-widest text-[#5A665F]">Languages Archived</p>
           </div>
           <div>
-            <p className="font-serif text-5xl text-[#B24A2D]">89k</p>
-            <p className="mt-2 text-xs font-bold uppercase tracking-widest text-[#5A665F]">Audio Recordings</p>
+            <p className="font-serif text-5xl text-[#B24A2D]">{stats.entries || "—"}</p>
+            <p className="mt-2 text-xs font-bold uppercase tracking-widest text-[#5A665F]">Dictionary Entries</p>
           </div>
         </div>
       </section>
@@ -65,7 +89,7 @@ export default function HomePage() {
       <section className="mx-auto max-w-6xl px-6 py-20 md:px-12">
         <div className="mb-10 flex items-end justify-between">
           <h2 className="font-serif text-4xl text-[#1B3022]">Featured Dialects</h2>
-          <Link href="/?tab=dictionary" className="text-sm font-semibold uppercase tracking-wider text-[#8A3620] hover:underline">
+          <Link href="/dialects" className="text-sm font-semibold uppercase tracking-wider text-[#8A3620] hover:underline">
             View All Dialects &rarr;
           </Link>
         </div>
