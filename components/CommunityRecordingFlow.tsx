@@ -47,10 +47,13 @@ export default function CommunityRecordingFlow({
   const [transcript, setTranscript] = useState("");
   const [draft, setDraft] = useState<ExtractedEntry>(emptyEntry);
 
+  const [audioOnlyInfo, setAudioOnlyInfo] = useState<string | null>(null);
+
   const reset = () => {
     setStep("record");
     setError(null);
     setDuplicateBanner(null);
+    setAudioOnlyInfo(null);
     setRecordingBlob(null);
     setTranscript("");
     setDraft(emptyEntry());
@@ -61,6 +64,7 @@ export default function CommunityRecordingFlow({
     setRecordingBlob(blob);
     setError(null);
     setDuplicateBanner(null);
+    setAudioOnlyInfo(null);
     setStep("uploading_audio");
 
     const fd = new FormData();
@@ -70,7 +74,12 @@ export default function CommunityRecordingFlow({
 
     setStep("transcribing");
     const transcribeRes = await fetch("/api/transcribe", { method: "POST", body: fd });
-    const transcribeJson = (await transcribeRes.json()) as { transcript?: string; error?: string };
+    const transcribeJson = (await transcribeRes.json()) as {
+      transcript?: string;
+      error?: string;
+      audio_only?: boolean;
+      audio_only_reason?: string;
+    };
     if (!transcribeRes.ok) {
       const msg =
         transcribeJson.error ||
@@ -79,6 +88,18 @@ export default function CommunityRecordingFlow({
           : "Transcription server unavailable.");
       setError(msg);
       setStep("record");
+      return;
+    }
+
+    // If language is not supported by Whisper, skip extraction — go straight to manual entry
+    if (transcribeJson.audio_only) {
+      setTranscript("");
+      setAudioOnlyInfo(
+        transcribeJson.audio_only_reason ||
+        "This language is not supported by automatic transcription. Your audio has been saved — please fill in the word details manually."
+      );
+      setDraft(emptyEntry());
+      setStep("review");
       return;
     }
 
@@ -191,152 +212,199 @@ export default function CommunityRecordingFlow({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {error ? (
-        <p className="rounded-md border border-rose-800 bg-rose-950/40 px-3 py-2 text-sm text-rose-200">{error}</p>
+        <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 shadow-sm">{error}</p>
       ) : null}
       {duplicateBanner ? (
-        <div className="rounded-md border border-amber-700/70 bg-amber-950/30 px-3 py-2 text-sm text-amber-100 whitespace-pre-line">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm whitespace-pre-line">
           {duplicateBanner}
         </div>
       ) : null}
 
       {step === "uploading_audio" ? (
-        <div className="panel text-sm text-slate-300">Uploading audio...</div>
+        <div className="rounded-xl border border-[#C3C8C1]/50 bg-white p-6 text-sm text-[#434843] shadow-sm flex items-center gap-3">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#B24A2D] border-r-transparent" />
+          Uploading audio...
+        </div>
       ) : null}
 
-      {step === "transcribing" ? <div className="panel text-sm text-slate-300">Transcribing speech...</div> : null}
+      {step === "transcribing" ? (
+        <div className="rounded-xl border border-[#C3C8C1]/50 bg-white p-6 text-sm text-[#434843] shadow-sm flex items-center gap-3">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#B24A2D] border-r-transparent" />
+          Transcribing speech locally...
+        </div>
+      ) : null}
 
-      {step === "extracting" ? <div className="panel text-sm text-slate-300">Extracting vocabulary...</div> : null}
+      {step === "extracting" ? (
+        <div className="rounded-xl border border-[#C3C8C1]/50 bg-white p-6 text-sm text-[#434843] shadow-sm flex items-center gap-3">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#B24A2D] border-r-transparent" />
+          Extracting vocabulary via watsonx...
+        </div>
+      ) : null}
 
       {step === "record" ? (
-        <div className="space-y-3">
-          <div className="panel space-y-2">
-            <p className="text-xs text-slate-500">
-              Supported upload formats include <span className="text-slate-300">.mp3</span>,{" "}
-              <span className="text-slate-300">.wav</span>, and <span className="text-slate-300">.m4a</span>.
+        <div className="space-y-6">
+          <div className="rounded-xl border border-[#C3C8C1]/50 bg-white p-6 shadow-sm space-y-3">
+            <h3 className="font-serif text-lg text-[#061B0E]">Upload Audio File</h3>
+            <p className="text-xs text-[#5A665F]">
+              Supported upload formats include <span className="font-medium text-[#1B3022]">.mp3</span>,{" "}
+              <span className="font-medium text-[#1B3022]">.wav</span>, and <span className="font-medium text-[#1B3022]">.m4a</span>.
             </p>
             <input
               ref={fileInputRef}
               type="file"
               accept=".mp3,.wav,.m4a,audio/mp3,audio/wav,audio/x-m4a,audio/m4a,audio/*"
-              className="block w-full cursor-pointer rounded border border-slate-700 bg-slate-950 px-2 py-2 text-sm text-slate-300"
+              className="block w-full cursor-pointer rounded-lg border border-[#C3C8C1]/60 bg-[#F5F4F0] px-3 py-2 text-sm text-[#434843] file:mr-4 file:rounded-full file:border-0 file:bg-[#E5F0E8] file:px-4 file:py-2 file:text-xs file:font-semibold file:text-[#1B3022] hover:file:bg-[#D0E0D5]"
               onChange={(e) => {
                 const list = e.target.files;
                 if (list?.[0]) void runPipeline(list[0]);
               }}
             />
           </div>
-          <AudioRecorder onRecordingComplete={(blob) => void runPipeline(blob)} />
+          <div className="rounded-xl border border-[#C3C8C1]/50 bg-white p-6 shadow-sm">
+            <h3 className="mb-4 font-serif text-lg text-[#061B0E]">Or Record Live</h3>
+            <AudioRecorder onRecordingComplete={(blob) => void runPipeline(blob)} />
+          </div>
         </div>
       ) : null}
 
       {step === "review" || step === "saving" ? (
-        <div className="panel space-y-3">
-          <p className="text-xs text-slate-500">Transcript</p>
-          <p className="text-sm text-slate-200">{transcript || "(empty)"}</p>
-          <p className="text-sm text-slate-400">
-            Review Watsonx suggestions, tighten translations, confirm definitions, then publish to Cloudant with your authenticated
-            contributor profile attached.
-          </p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <label className="text-xs text-slate-500">
-              Word / phrase
-              <input
-                className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-slate-100"
-                value={draft.word}
-                onChange={(e) => setDraft((d) => ({ ...d, word: e.target.value }))}
-              />
-            </label>
-            <label className="text-xs text-slate-500">
-              Part of speech
-              <input
-                className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-slate-100"
-                value={draft.part_of_speech || ""}
-                onChange={(e) => setDraft((d) => ({ ...d, part_of_speech: e.target.value }))}
-              />
-            </label>
+        <div className="rounded-xl border border-[#C3C8C1]/50 bg-white p-6 shadow-sm space-y-6">
+          <div>
+            <h3 className="font-serif text-xl text-[#061B0E]">
+              {audioOnlyInfo ? "Manual Entry" : "Review Extraction"}
+            </h3>
+            <p className="mt-1 text-sm text-[#5A665F]">
+              {audioOnlyInfo
+                ? "Fill in the word details below. Your audio recording has been saved."
+                : "Review Watsonx suggestions, tighten translations, confirm definitions, then publish to Cloudant."}
+            </p>
           </div>
-          <label className="text-xs text-slate-500">
-            Definition / cultural gloss
-            <textarea
-              className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm text-slate-100"
-              rows={3}
-              value={draft.definition || ""}
-              onChange={(e) => setDraft((d) => ({ ...d, definition: e.target.value }))}
-            />
-          </label>
-          <label className="text-xs text-slate-500">
-            Phonetic
-            <input
-              className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-slate-100"
-              value={draft.phonetic || ""}
-              onChange={(e) => setDraft((d) => ({ ...d, phonetic: e.target.value }))}
-            />
-          </label>
-          <label className="text-xs text-slate-500">
-            Translation / gloss
-            <input
-              className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-slate-100"
-              value={draft.translation}
-              onChange={(e) => setDraft((d) => ({ ...d, translation: e.target.value }))}
-            />
-          </label>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <label className="text-xs text-slate-500">
-              Example sentence
+
+          {audioOnlyInfo ? (
+            <div className="rounded-lg bg-blue-50 border border-blue-200 p-4 flex items-start gap-3">
+              <svg className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm text-blue-900">{audioOnlyInfo}</p>
+            </div>
+          ) : (
+            <div className="rounded-lg bg-[#F5F4F0] p-4 border border-[#C3C8C1]/40">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#8A3620] mb-1">Generated Transcript</p>
+              <p className="text-sm font-medium text-[#061B0E]">{transcript || "(empty)"}</p>
+            </div>
+          )}
+          
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="text-xs font-semibold uppercase tracking-wide text-[#5A665F]">
+                Word / phrase
+                <input
+                  className="mt-1.5 block w-full rounded-lg border border-[#C3C8C1]/60 bg-white px-3 py-2 text-sm text-[#061B0E] focus:border-[#B24A2D] focus:outline-none focus:ring-1 focus:ring-[#B24A2D]"
+                  value={draft.word}
+                  onChange={(e) => setDraft((d) => ({ ...d, word: e.target.value }))}
+                />
+              </label>
+              <label className="text-xs font-semibold uppercase tracking-wide text-[#5A665F]">
+                Part of speech
+                <input
+                  className="mt-1.5 block w-full rounded-lg border border-[#C3C8C1]/60 bg-white px-3 py-2 text-sm text-[#061B0E] focus:border-[#B24A2D] focus:outline-none focus:ring-1 focus:ring-[#B24A2D]"
+                  value={draft.part_of_speech || ""}
+                  onChange={(e) => setDraft((d) => ({ ...d, part_of_speech: e.target.value }))}
+                />
+              </label>
+            </div>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-[#5A665F]">
+              Definition / cultural gloss
               <textarea
-                className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm text-slate-100"
-                rows={2}
-                value={draft.example_sentence || ""}
-                onChange={(e) => setDraft((d) => ({ ...d, example_sentence: e.target.value }))}
+                className="mt-1.5 block w-full rounded-lg border border-[#C3C8C1]/60 bg-white px-3 py-2 text-sm text-[#061B0E] focus:border-[#B24A2D] focus:outline-none focus:ring-1 focus:ring-[#B24A2D]"
+                rows={3}
+                value={draft.definition || ""}
+                onChange={(e) => setDraft((d) => ({ ...d, definition: e.target.value }))}
               />
             </label>
-            <label className="text-xs text-slate-500">
-              Example translation
-              <textarea
-                className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm text-slate-100"
-                rows={2}
-                value={draft.example_translation || ""}
-                onChange={(e) => setDraft((d) => ({ ...d, example_translation: e.target.value }))}
+            <label className="block text-xs font-semibold uppercase tracking-wide text-[#5A665F]">
+              Phonetic
+              <input
+                className="mt-1.5 block w-full rounded-lg border border-[#C3C8C1]/60 bg-white px-3 py-2 text-sm text-[#061B0E] focus:border-[#B24A2D] focus:outline-none focus:ring-1 focus:ring-[#B24A2D]"
+                value={draft.phonetic || ""}
+                onChange={(e) => setDraft((d) => ({ ...d, phonetic: e.target.value }))}
               />
             </label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-[#5A665F]">
+              Translation / gloss
+              <input
+                className="mt-1.5 block w-full rounded-lg border border-[#C3C8C1]/60 bg-white px-3 py-2 text-sm text-[#061B0E] focus:border-[#B24A2D] focus:outline-none focus:ring-1 focus:ring-[#B24A2D]"
+                value={draft.translation}
+                onChange={(e) => setDraft((d) => ({ ...d, translation: e.target.value }))}
+              />
+            </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="text-xs font-semibold uppercase tracking-wide text-[#5A665F]">
+                Example sentence
+                <textarea
+                  className="mt-1.5 block w-full rounded-lg border border-[#C3C8C1]/60 bg-white px-3 py-2 text-sm text-[#061B0E] focus:border-[#B24A2D] focus:outline-none focus:ring-1 focus:ring-[#B24A2D]"
+                  rows={2}
+                  value={draft.example_sentence || ""}
+                  onChange={(e) => setDraft((d) => ({ ...d, example_sentence: e.target.value }))}
+                />
+              </label>
+              <label className="text-xs font-semibold uppercase tracking-wide text-[#5A665F]">
+                Example translation
+                <textarea
+                  className="mt-1.5 block w-full rounded-lg border border-[#C3C8C1]/60 bg-white px-3 py-2 text-sm text-[#061B0E] focus:border-[#B24A2D] focus:outline-none focus:ring-1 focus:ring-[#B24A2D]"
+                  rows={2}
+                  value={draft.example_translation || ""}
+                  onChange={(e) => setDraft((d) => ({ ...d, example_translation: e.target.value }))}
+                />
+              </label>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+
+          <div className="mt-6 flex flex-wrap items-center gap-3 pt-4 border-t border-[#E3DFD6]">
             <button
               type="button"
               disabled={step === "saving"}
               onClick={() => void saveEntry(false)}
-              className="rounded bg-emerald-700 px-3 py-2 text-sm hover:bg-emerald-600 disabled:opacity-50"
+              className="rounded-full bg-[#B24A2D] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#8A3620] disabled:opacity-50 transition-colors"
             >
-              {step === "saving" ? "Publishing…" : "Publish entry"}
+              {step === "saving" ? "Publishing…" : "Publish Entry"}
             </button>
             {duplicateBanner ? (
               <button
                 type="button"
                 disabled={step === "saving"}
                 onClick={() => void saveEntry(true)}
-                className="rounded border border-amber-500/70 px-3 py-2 text-sm text-amber-100 hover:bg-amber-900/40 disabled:opacity-50"
+                className="rounded-full bg-[#FCE8E3] px-6 py-2.5 text-sm font-bold text-[#8A3620] hover:bg-[#F5D5CC] disabled:opacity-50 transition-colors"
               >
-                Create anyway
+                Create Anyway
               </button>
             ) : null}
-            <button type="button" onClick={reset} className="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">
-              Start over
+            <button type="button" onClick={reset} className="rounded-full border border-[#C3C8C1] bg-white px-6 py-2.5 text-sm font-semibold text-[#434843] hover:bg-[#F5F4F0] transition-colors">
+              Start Over
             </button>
           </div>
         </div>
       ) : null}
 
       {step === "done" ? (
-        <div className="panel space-y-2">
-          <p className="font-medium text-slate-100">Dictionary entry saved.</p>
-          <Link className="text-cyan-300 underline hover:text-cyan-200" href={`/${languageCode}`}>
-            Open dictionary
-          </Link>
-          <button type="button" onClick={reset} className="ml-4 text-sm text-slate-400 underline hover:text-slate-300">
-            Contribute another
-          </button>
+        <div className="rounded-xl border border-[#C3C8C1]/50 bg-white p-8 shadow-sm text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#E5F0E8] text-[#1B3022] mb-4">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h3 className="font-serif text-2xl text-[#061B0E] mb-2">Dictionary entry saved!</h3>
+          <p className="text-[#5A665F] mb-6">Your contribution has been successfully archived.</p>
+          <div className="flex justify-center gap-4">
+            <Link className="rounded-full bg-[#1B3022] px-6 py-2.5 text-sm font-bold text-[#FBF9F4] hover:bg-[#061B0E] transition-colors" href={`/${languageCode}`}>
+              Back to Dictionary
+            </Link>
+            <button type="button" onClick={reset} className="rounded-full border border-[#C3C8C1] bg-white px-6 py-2.5 text-sm font-semibold text-[#434843] hover:bg-[#F5F4F0] transition-colors">
+              Contribute Another
+            </button>
+          </div>
         </div>
       ) : null}
     </div>
