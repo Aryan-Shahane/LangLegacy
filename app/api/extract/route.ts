@@ -62,24 +62,22 @@ ${transcript}
 
 Extract every distinct word or phrase in ${languageName}. For each return:
 - word: the word as it appears
-- phonetic: IPA or simplified phonetic spelling
-- translation: English meaning
+- translation: English gloss
+- definition: short cultural or usage note (1-2 sentences)
+- phonetic: IPA or simplified phonetic spelling when possible
 - part_of_speech: noun / verb / adjective / greeting / particle / other
 - example_sentence: a sentence from the transcript using this word
 - example_translation: English translation of that sentence
 
 Return exactly this JSON shape and nothing else:
-{"entries":[{"word":"","phonetic":"","translation":"","part_of_speech":"","example_sentence":"","example_translation":""}]}
+{"entries":[{"word":"","translation":"","definition":"","phonetic":"","part_of_speech":"","example_sentence":"","example_translation":""}]}
 <|assistant|>`;
 
     const raw = await generateText(prompt);
     const clean = raw.replace(/```json\n?|\n?```/g, "").trim();
     const parsed = JSON.parse(extractJsonObject(clean)) as { entries?: ExtractedEntry[] };
     return NextResponse.json({ entries: parsed.entries || [] });
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Extraction failed" },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: "Vocabulary extraction failed." }, { status: 500 });
   }
 }

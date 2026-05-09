@@ -9,8 +9,9 @@ type Phase = "pick" | "run" | "review" | "save" | "done";
 function emptyExtracted(): ExtractedEntry {
   return {
     word: "",
-    phonetic: "",
     translation: "",
+    definition: "",
+    phonetic: "",
     part_of_speech: "other",
     example_sentence: "",
     example_translation: "",
@@ -85,7 +86,7 @@ export default function UploadFlow() {
       let index = 0;
       for (const file of pendingFiles) {
         index += 1;
-        setLiveLog(`(${index}/${pendingFiles.length}) Transcribing “${file.name}” via local Whisper…`);
+        setLiveLog(`(${index}/${pendingFiles.length}) Uploading audio…`);
 
         const fd = new FormData();
         fd.append("audio", file);
@@ -104,7 +105,8 @@ export default function UploadFlow() {
 
         const transcript = transcribeJson.transcript?.trim() || "";
 
-        setLiveLog(`(${index}/${pendingFiles.length}) IBM watsonx is extracting vocabulary from “${file.name}”…`);
+        setLiveLog(`(${index}/${pendingFiles.length}) Transcribing speech…`);
+        setLiveLog(`(${index}/${pendingFiles.length}) Extracting vocabulary…`);
 
         const extractRes = await fetch("/api/extract", {
           method: "POST",
@@ -132,6 +134,7 @@ export default function UploadFlow() {
                 word: entry.word,
                 phonetic: entry.phonetic ?? "",
                 translation: entry.translation || "",
+                definition: entry.definition ?? "",
                 part_of_speech: entry.part_of_speech || "other",
                 example_sentence: entry.example_sentence ?? "",
                 example_translation: entry.example_translation ?? "",
@@ -170,6 +173,7 @@ export default function UploadFlow() {
             word: d.word.trim() || "(untitled archive gloss)",
             phonetic: (d.phonetic ?? "").trim() || null,
             translation: d.translation.trim() || "(needs translation)",
+            definition: (d.definition ?? "").trim() || null,
             part_of_speech: (d.part_of_speech ?? "").trim() || null,
             example_sentence: (d.example_sentence ?? "").trim() || null,
             example_translation: (d.example_translation ?? "").trim() || null,
@@ -323,6 +327,15 @@ export default function UploadFlow() {
                         className="mt-1 w-full rounded border border-slate-800 bg-transparent px-2 py-1"
                         value={row.data.translation}
                         onChange={(e) => updateRow(row.rowId, { translation: e.target.value })}
+                      />
+                    </label>
+                    <label className="block text-xs text-slate-500 lg:col-span-2">
+                      Definition / cultural gloss
+                      <textarea
+                        className="mt-1 w-full rounded border border-slate-800 bg-transparent px-2 py-1 text-sm"
+                        rows={2}
+                        value={row.data.definition || ""}
+                        onChange={(e) => updateRow(row.rowId, { definition: e.target.value })}
                       />
                     </label>
                     <label className="block text-xs text-slate-500 lg:col-span-2">

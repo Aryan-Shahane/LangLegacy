@@ -16,6 +16,8 @@ export default function FlashCard({
   const [revealed, setRevealed] = useState(false);
   const { toggle, isPlaying, hasAudio } = useExclusivePlayback(entry.audio_url);
 
+  const definitionPeek = entry.definition?.trim() || entry.phonetic || null;
+
   return (
     <div className="space-y-6">
       <Card className="relative mx-auto max-w-xl border-[#C3C8C1]/35 bg-[#F5F3EE] p-10 text-center">
@@ -36,6 +38,9 @@ export default function FlashCard({
         {revealed ? (
           <div className="space-y-3">
             <p className="font-serif text-2xl italic text-[#9F4026]">{entry.translation}</p>
+            {entry.definition?.trim() ? (
+              <p className="mx-auto max-w-md text-sm leading-relaxed text-[#434843]">{entry.definition.trim()}</p>
+            ) : null}
             {entry.example_sentence ? (
               <p className="mx-auto max-w-md text-sm leading-relaxed text-[#434843]">
                 “{entry.example_sentence}”
@@ -49,7 +54,7 @@ export default function FlashCard({
           </div>
         ) : (
           <div className="space-y-3">
-            {entry.phonetic ? <p className="text-sm text-[#434843]">{entry.phonetic}</p> : null}
+            {definitionPeek ? <p className="text-sm text-[#434843]">{definitionPeek}</p> : null}
             <Button variant="outline" onClick={() => setRevealed(true)} className="mx-auto">
               Show answer
             </Button>

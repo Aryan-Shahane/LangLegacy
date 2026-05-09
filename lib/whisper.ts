@@ -4,7 +4,7 @@ export async function transcribeAudio(
 ): Promise<{ transcript: string; language_code: string }> {
   const serverUrl = process.env.WHISPER_SERVER_URL;
   if (!serverUrl) {
-    throw new Error("Missing WHISPER_SERVER_URL");
+    throw new Error("Transcription server unavailable.");
   }
 
   const form = new FormData();
@@ -13,13 +13,18 @@ export async function transcribeAudio(
     form.append("language_code", languageCode);
   }
 
-  const res = await fetch(`${serverUrl}/transcribe`, {
-    method: "POST",
-    body: form,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${serverUrl}/transcribe`, {
+      method: "POST",
+      body: form,
+    });
+  } catch {
+    throw new Error("Transcription server unavailable.");
+  }
 
   if (!res.ok) {
-    throw new Error(`Whisper server error: ${res.status}`);
+    throw new Error("Transcription server unavailable.");
   }
 
   return (await res.json()) as { transcript: string; language_code: string };

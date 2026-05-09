@@ -19,10 +19,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "language_code is required" }, { status: 400 });
     }
 
-    const docs = (await findDocuments("entries", {
-      type: "entry",
-      language_code: languageCode,
-    }, 300, 0)) as Entry[];
+    const selector = {
+      $and: [
+        { type: "entry" },
+        { language_code: languageCode },
+        { $or: [{ status: { $exists: false } }, { status: "active" }, { status: "under_review" }] },
+      ],
+    };
+
+    const docs = (await findDocuments("entries", selector, 300, 0)) as Entry[];
     const picked = shuffle(docs).slice(0, Math.max(1, Math.min(n, 30)));
     return NextResponse.json(picked);
   } catch (error) {

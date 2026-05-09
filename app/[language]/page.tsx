@@ -1,12 +1,52 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { getSessionFromCookie } from "@/lib/auth";
 import SiteFooter from "@/components/SiteFooter";
 import TopBar from "@/components/TopBar";
 import { Button } from "@/components/ui/button";
 import { getDocument } from "@/lib/cloudant";
-import type { Language } from "@/lib/types";
 import LanguageTabsPanel from "@/components/LanguageTabsPanel";
+import { formatRelativeTime } from "@/lib/formatRelative";
+
+function coerceLanguageHeader(raw: Record<string, unknown> | null): {
+  name: string;
+  region: string;
+  entryCount: number;
+  contributorCount: number;
+  lastActivityIso: string | null;
+} {
+  if (!raw) {
+    return {
+      name: "",
+      region: "",
+      entryCount: 0,
+      contributorCount: 0,
+      lastActivityIso: null,
+    };
+  }
+
+  return {
+    name: typeof raw.name === "string" ? raw.name : "",
+    region: typeof raw.region === "string" ? raw.region : "",
+    entryCount:
+      typeof raw.entry_count === "number"
+        ? raw.entry_count
+        : typeof raw.entry_count === "string"
+          ? Number(raw.entry_count) || 0
+          : 0,
+    contributorCount:
+      typeof raw.contributor_count === "number"
+        ? raw.contributor_count
+        : typeof raw.contributor_count === "string"
+          ? Number(raw.contributor_count) || 0
+          : 0,
+    lastActivityIso:
+      typeof raw.updated_at === "string"
+        ? raw.updated_at
+        : typeof raw.created_at === "string"
+          ? raw.created_at
+          : null,
+  };
+}
 
 export default async function LanguageDictionaryPage({
   params,
@@ -17,14 +57,13 @@ export default async function LanguageDictionaryPage({
 }) {
   const { language } = await params;
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
-  const languageDoc = (await getDocument("languages", language)) as Language | null;
+  const rawDoc = (await getDocument("languages", language)) as Record<string, unknown> | null;
+  const header = coerceLanguageHeader(rawDoc);
   const viewer = await getSessionFromCookie();
-  if (!viewer) {
-    redirect("/auth");
-  }
-  const dictionaryTitle = languageDoc?.name ? `${languageDoc.name} Dictionary` : `${language} Dictionary`;
+  const dictionaryTitle = header.name || `${language} Dictionary`;
   const activeTab = (resolvedSearchParams?.tab || "dictionary").toLowerCase();
   const topBarActiveTab = activeTab === "dictionary" ? "home" : activeTab;
+
   const tabs = [
     { id: "dictionary", label: "Dictionary" },
     { id: "community", label: "Community" },
@@ -37,13 +76,41 @@ export default async function LanguageDictionaryPage({
       <TopBar activeTab={topBarActiveTab} languageCode={language} />
 
       <section className="px-6 py-12 md:px-12">
-        <div className="mx-auto max-w-6xl text-center">
-          <h1 className="font-serif text-5xl text-[#061B0E]">{dictionaryTitle}</h1>
-          <p className="mx-auto mt-3 max-w-2xl text-[#434843]">
-            Explore the living breath of {languageDoc?.region || "our communities"}. Search for words, phrases, and concepts within our
-            community-driven archive.
-          </p>
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-2" aria-label="Dictionary tabs">
+        <div className="mx-auto max-w-6xl space-y-4 text-center">
+          <header>
+            <h1 className="font-serif text-5xl text-[#061B0E]">{dictionaryTitle}</h1>
+            <p className="mx-auto mt-3 max-w-2xl text-[#434843]">
+              {header.region ? (
+                <>
+                  Explore the living archive of <span className="font-medium text-[#061B0E]">{header.region}</span>. Search entries,
+                  listen to pronunciation, and grow the communal dictionary.
+                </>
+              ) : (
+                <>
+                  Explore the living breath of our communities. Search for words, phrases, and pronunciation samples within our
+                  collaborative archive.
+                </>
+              )}
+            </p>
+            <dl className="mx-auto mt-6 grid max-w-3xl gap-4 rounded-3xl border border-[#C3C8C1]/35 bg-[#F5F3EE] p-6 text-sm text-[#434843] sm:grid-cols-3">
+              <div className="text-center">
+                <dt className="text-xs uppercase tracking-[0.3em] text-[#757C76]">Total entries</dt>
+                <dd className="mt-2 text-3xl font-serif text-[#061B0E]">{header.entryCount.toLocaleString()}</dd>
+              </div>
+              <div className="text-center">
+                <dt className="text-xs uppercase tracking-[0.3em] text-[#757C76]">Contributors</dt>
+                <dd className="mt-2 text-3xl font-serif text-[#061B0E]">{header.contributorCount.toLocaleString()}</dd>
+              </div>
+              <div className="text-center">
+                <dt className="text-xs uppercase tracking-[0.3em] text-[#757C76]">Latest activity</dt>
+                <dd className="mt-2 text-lg font-semibold text-[#061B0E]">
+                  {header.lastActivityIso ? formatRelativeTime(header.lastActivityIso) : "—"}
+                </dd>
+              </div>
+            </dl>
+          </header>
+
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-6" aria-label="Dictionary tabs">
             {tabs.map((tab) => {
               const href = `/${language}?tab=${tab.id}`;
               const isActive = activeTab === tab.id || (tab.id === "dictionary" && !resolvedSearchParams?.tab);
@@ -62,21 +129,6 @@ export default async function LanguageDictionaryPage({
       <section className="px-6 pb-16 md:px-12">
         <div className="mx-auto max-w-6xl">
           <LanguageTabsPanel languageCode={language} viewerRole={viewer?.role || "user"} />
-          <div className="mt-6 grid gap-4 rounded-2xl border border-[#8C7851]/20 bg-[#1B3022] p-6 text-[#D0E9D4] md:grid-cols-[1.2fr_0.8fr]">
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-[#B4CDB8]">Dialect Spotlight</p>
-              <h2 className="mt-3 font-serif text-4xl leading-tight text-white">Preserving {languageDoc?.region || "Regional"} Dialects</h2>
-              <p className="mt-3 max-w-xl text-sm text-[#D0E9D4]/85">
-                Explore oral histories and place-based pronunciation traditions that keep ancestral language forms alive.
-              </p>
-              <Link href={`/${language}`} className="mt-4 inline-block">
-                <Button variant="outline" className="border-white/30 bg-white text-[#1B3022] hover:bg-[#F0EEE9]">
-                  Explore Archive
-                </Button>
-              </Link>
-            </div>
-            <div className="h-52 rounded-xl bg-gradient-to-br from-[#5A5E62] via-[#2C3236] to-[#0F1418]" />
-          </div>
         </div>
       </section>
 

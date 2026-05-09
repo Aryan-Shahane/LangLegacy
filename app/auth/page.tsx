@@ -1,13 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type AuthMode = "login" | "signup";
 type RoleMode = "user" | "moderator";
 
-export default function AuthPage() {
+function AuthInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextHref = searchParams.get("next");
+  const safeNext =
+    nextHref && nextHref.startsWith("/") && !nextHref.startsWith("//") ? nextHref : "/";
+
   const [mode, setMode] = useState<AuthMode>("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -36,7 +41,7 @@ export default function AuthPage() {
         setError(result.error || "Authentication failed");
         return;
       }
-      router.push("/");
+      router.push(safeNext);
       router.refresh();
     } catch {
       setError("Could not reach authentication service");
@@ -50,8 +55,8 @@ export default function AuthPage() {
       <h1 className="text-xl font-semibold text-slate-100">{mode === "signup" ? "Create account" : "Log in"}</h1>
       <p className="text-sm text-slate-400">
         {mode === "signup"
-          ? "Sign up to save your account in the database and keep your role-based permissions."
-          : "Log in to continue using community and moderation features."}
+          ? "Sign up to save contributions with your LangLegacy contributor profile."
+          : "Log in to continue preserving dictionary entries."}
       </p>
 
       <div className="flex gap-2">
@@ -128,5 +133,19 @@ export default function AuthPage() {
         {busy ? "Please wait..." : mode === "signup" ? "Create account" : "Log in"}
       </button>
     </section>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense
+      fallback={
+        <section className="mx-auto max-w-md space-y-4 rounded-xl border border-slate-800 bg-slate-900 p-5 text-sm text-slate-400">
+          Loading sign-in...
+        </section>
+      }
+    >
+      <AuthInner />
+    </Suspense>
   );
 }

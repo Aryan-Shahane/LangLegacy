@@ -1,8 +1,9 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { findDocuments, getDocument, putDocument, saveDocument } from "@/lib/cloudant";
+import { coerceEntry } from "@/lib/entryCoercion";
+import { getSessionFromCookie } from "@/lib/auth";
 import { uploadAudio } from "@/lib/cos";
-import type { Entry } from "@/lib/types";
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,23 +16,25 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "language_code is required" }, { status: 400 });
     }
 
-    const selector: Record<string, unknown> = {
-      type: "entry",
-      language_code: languageCode,
-    };
+    const baseAnd: Record<string, unknown>[] = [
+      { type: "entry" },
+      { language_code: languageCode },
+      { $or: [{ status: { $exists: false } }, { status: "active" }, { status: "under_review" }] },
+    ];
+
     if (q) {
       const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      selector.$and = [
-        { type: "entry" },
-        { language_code: languageCode },
-        { $or: [{ word: { $regex: `(?i)${escaped}` } }, { translation: { $regex: `(?i)${escaped}` } }] },
-      ];
-      delete selector.type;
-      delete selector.language_code;
+      baseAnd.push({
+        $or: [{ word: { $regex: `(?i)${escaped}` } }, { translation: { $regex: `(?i)${escaped}` } }],
+      });
     }
 
-    const docs = (await findDocuments("entries", selector, limit, offset)) as Entry[];
-    return NextResponse.json(docs);
+    const selector: Record<string, unknown> = { $and: baseAnd };
+    const docs = (await findDocuments("entries", selector, limit, offset)) as Record<
+      string,
+      unknown
+    >[];
+    return NextResponse.json(docs.map(coerceEntry));
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to fetch entries" },
@@ -42,47 +45,99 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as Record<string, string | null>;
+    const body = (await req.json()) as Record<string, string | null | boolean | undefined>;
+    const session = await getSessionFromCookie();
+    const contributor_id = session?.userId ?? null;
+    const contributor_name = session?.name ?? null;
+
+    const wordProbe = String(body.word || "").trim();
+    const language_code = String(body.language_code || "");
+
+    if (body.duplicate_probe === true || body.duplicate_probe === "true") {
+      if (!language_code || !wordProbe) {
+        return NextResponse.json({ error: "language_code and word are required for duplicate probe." }, { status: 400 });
+      }
+      const dupAnd: Record<string, unknown>[] = [
+        { type: "entry" },
+        { language_code },
+        { $or: [{ status: { $exists: false } }, { status: "active" }, { status: "under_review" }] },
+      ];
+      const esc = wordProbe.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      dupAnd.push({ word: { $regex: `(?i)^${esc}$` } });
+      const dupSelector = { $and: dupAnd };
+      const matches = (await findDocuments("entries", dupSelector, 8, 0)) as Record<
+        string,
+        unknown
+      >[];
+      if (matches.length > 0) {
+        return NextResponse.json({
+          duplicate_warning: true,
+          matches: matches.map(coerceEntry),
+          message: "Possible duplicate entry detected.\nWould you like to merge or create a new entry?",
+        });
+      }
+      return NextResponse.json({ duplicate_warning: false });
+    }
+
     const id = randomUUID();
     let audioUrl: string | null = null;
 
     if (body.audio_base64 && body.audio_type) {
       const key = `entries/${id}.webm`;
-      const buffer = Buffer.from(body.audio_base64, "base64");
-      audioUrl = await uploadAudio(key, buffer, body.audio_type);
+      const buffer = Buffer.from(String(body.audio_base64), "base64");
+      try {
+        audioUrl = await uploadAudio(key, buffer, String(body.audio_type));
+      } catch {
+        return NextResponse.json({ error: "Audio upload failed. Please try again." }, { status: 502 });
+      }
     }
 
-    const payload: Entry = {
+    const word = wordProbe;
+    const translation = String(body.translation || "").trim();
+
+    const definition =
+      body.definition != null && String(body.definition).trim()
+        ? String(body.definition).trim()
+        : null;
+
+    const payload: Record<string, unknown> = {
       _id: id,
       type: "entry",
-      language_code: body.language_code || "",
-      word: body.word || "",
+      language_code,
+      word: word || "(untitled)",
+      translation: translation || "(needs translation)",
+      definition,
       phonetic: body.phonetic || null,
-      translation: body.translation || "",
       part_of_speech: body.part_of_speech || null,
       example_sentence: body.example_sentence || null,
       example_translation: body.example_translation || null,
       audio_url: audioUrl || body.audio_url || null,
       source: body.source === "community" ? "community" : "archive",
+      contributor_id,
+      contributor_name:
+        contributor_name ??
+        (String(body.source || "archive") === "community" ? "Community" : null),
+      report_count: 0,
+      status: "active",
       created_at: new Date().toISOString(),
     };
 
-    const saved = await saveDocument("entries", payload as unknown as Record<string, unknown>);
+    const saved = await saveDocument("entries", payload);
 
-    // Keep language card counts fresh for the home page.
-    if (payload.language_code) {
-      const languageDoc = await getDocument("languages", payload.language_code);
+    if (language_code) {
+      const languageDoc = await getDocument("languages", language_code);
       if (languageDoc && typeof languageDoc._rev === "string") {
         const currentCount =
           typeof languageDoc.entry_count === "number" ? languageDoc.entry_count : 0;
-        await putDocument("languages", payload.language_code, {
+        await putDocument("languages", language_code, {
           ...languageDoc,
           entry_count: currentCount + 1,
+          updated_at: new Date().toISOString(),
         });
       }
     }
 
-    return NextResponse.json({ ok: true, saved });
+    return NextResponse.json({ ok: true, saved, entry: coerceEntry(payload) });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to save entry" },

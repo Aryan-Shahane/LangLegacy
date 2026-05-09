@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 type Props = {
+  placeholder?: string;
   query: string;
   onQueryChange: (value: string) => void;
   totalLoaded: number;
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export default function SearchBar({
+  placeholder = "Search by endangered-language word or English translation…",
   query,
   onQueryChange,
   totalLoaded,
@@ -26,7 +28,7 @@ export default function SearchBar({
         <Input
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
-          placeholder="Search by endangered-language word or English translation…"
+          placeholder={placeholder}
           className="h-11 border-[#C3C8C1] bg-[#FBF9F4] text-[#1B1C19]"
         />
         <Button type="button" variant="outline" onClick={() => onQueryChange("")} className="rounded-xl">

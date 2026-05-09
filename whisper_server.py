@@ -1,57 +1,92 @@
-from fastapi import FastAPI, File, Form, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
-from faster_whisper import WhisperModel
-import os
+"""
+Local Whisper transcription server per DICTIONARY.md.
+
+Dependency install (recommended in a dedicated venv):
+  pip install fastapi uvicorn python-multipart faster-whisper torch
+
+Runs on http://localhost:8000 with POST /transcribe accepting multipart field "audio"
+and optional Form field language_code — matching lib/whisper.ts.
+"""
+
+from __future__ import annotations
+
 import tempfile
-import uvicorn
+from pathlib import Path
 
-app = FastAPI()
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_methods=["POST"],
-    allow_headers=["*"],
-)
-
-def load_model():
-    # Prefer GPU when available; fallback to CPU for portability.
-    try:
-        return WhisperModel("base", device="cuda", compute_type="float16")
-    except Exception:
-        return WhisperModel("base", device="cpu", compute_type="int8")
+try:
+    from faster_whisper import WhisperModel  # type: ignore
+except ImportError:
+    WhisperModel = None
 
 
-model = load_model()
+app = FastAPI(title="LangLegacy Whisper", version="1.0.0")
+_model_cache: WhisperModel | None = None
 
 
-def transcribe_with_model(audio_path: str, language_code: str | None):
-    segments, _ = model.transcribe(audio_path, language=language_code if language_code else None)
-    return list(segments)
+def _load_model():
+    global _model_cache
+    if WhisperModel is None:
+        raise HTTPException(status_code=503, detail="faster-whisper is not installed in this Python environment.")
+
+    if _model_cache is None:
+        # small default; override with MODEL_SIZE=something from faster-whisper presets
+        import os
+
+        size = os.environ.get("WHISPER_MODEL_SIZE", "small")
+        device = os.environ.get("WHISPER_DEVICE", "auto")
+        compute_type = os.environ.get("WHISPER_COMPUTE", "auto")
+        _model_cache = WhisperModel(size, device=device, compute_type=compute_type)
+    return _model_cache
+
+
+@app.get("/health")
+def health():
+    return {"ok": True}
 
 
 @app.post("/transcribe")
-async def transcribe(audio: UploadFile = File(...), language_code: str = Form(default=None)):
-    global model
-    suffix = os.path.splitext(audio.filename or "audio.webm")[1] or ".webm"
+async def transcribe(audio: UploadFile = File(...), language_code: str = Form("")):
+    if WhisperModel is None:
+        raise HTTPException(status_code=503, detail="faster-whisper is not installed")
+
+    suffix = Path(audio.filename or "recording").suffix.lower()
+    if suffix not in {".wav", ".mp3", ".m4a", ".webm", ".ogg", ".flac"}:
+        suffix = ".webm"
+
+    data = await audio.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="empty audio payload")
+
+    path: Path | None = None
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        tmp.write(await audio.read())
-        tmp_path = tmp.name
+        tmp.write(data)
+        tmp.flush()
+        path = Path(tmp.name)
 
     try:
-        try:
-            segments = transcribe_with_model(tmp_path, language_code)
-        except RuntimeError as exc:
-            # Some Windows setups can construct a CUDA model but fail at first run.
-            if "cublas64_12.dll" not in str(exc):
-                raise
-            model = WhisperModel("base", device="cpu", compute_type="int8")
-            segments = transcribe_with_model(tmp_path, language_code)
-        transcript = " ".join(segment.text for segment in segments).strip()
-        return {"transcript": transcript, "language_code": language_code or ""}
+        model = _load_model()
+        lang_hint = language_code.strip()[:8] if language_code.strip() else None
+        segments, info = model.transcribe(str(path), language=lang_hint)
+        text = " ".join(seg.text.strip() for seg in segments).strip()
+        return {
+            "transcript": text,
+            "language_code": language_code or getattr(info, "language", "") or "",
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:  # pylint: disable=broad-except
+        raise HTTPException(status_code=503, detail=f"transcription failed: {exc}") from exc
     finally:
-        os.unlink(tmp_path)
+        if path is not None:
+            try:
+                path.unlink(missing_ok=True)
+            except OSError:
+                pass
 
 
 if __name__ == "__main__":
+    import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

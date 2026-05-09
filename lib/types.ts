@@ -4,9 +4,14 @@ export type Language = {
   name: string;
   code: string;
   region: string | null;
-  speaker_count: number | null;
+  description?: string | null;
+  native_script?: string | null;
+  /** Approximate speakers (optional enrichment for cards). */
+  speaker_count?: number | null;
   entry_count: number;
+  contributor_count?: number;
   created_at: string;
+  updated_at?: string | null;
 };
 
 export type Entry = {
@@ -14,20 +19,30 @@ export type Entry = {
   type?: "entry";
   language_code: string;
   word: string;
-  phonetic: string | null;
   translation: string;
-  part_of_speech: string | null;
-  example_sentence: string | null;
-  example_translation: string | null;
+  definition: string | null;
   audio_url: string | null;
-  source: "archive" | "community";
+  contributor_id: string | null;
+  contributor_name: string | null;
+  report_count: number;
+  status: "active" | "removed" | "under_review";
   created_at: string;
+  phonetic?: string | null;
+  part_of_speech?: string | null;
+  example_sentence?: string | null;
+  example_translation?: string | null;
+  source?: "archive" | "community";
 };
 
-export type ExtractedEntry = Omit<
-  Entry,
-  "_id" | "audio_url" | "source" | "created_at" | "language_code" | "type"
->;
+export type ExtractedEntry = {
+  word: string;
+  translation: string;
+  definition?: string | null;
+  phonetic?: string | null;
+  part_of_speech?: string | null;
+  example_sentence?: string | null;
+  example_translation?: string | null;
+};
 
 export type UserRole = "user" | "moderator" | "admin";
 

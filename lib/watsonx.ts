@@ -37,8 +37,8 @@ export async function generateText(prompt: string): Promise<string> {
   const projectId = requireEnv("WATSONX_PROJECT_ID");
   const candidateModels = [
     process.env.WATSONX_MODEL_ID,
-    "ibm/granite-3-8b-instruct",
     "ibm/granite-13b-instruct-v2",
+    "ibm/granite-3-8b-instruct",
   ].filter((v): v is string => Boolean(v));
 
   let lastError = "";
