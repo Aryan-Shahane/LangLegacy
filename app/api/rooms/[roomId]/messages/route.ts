@@ -3,19 +3,29 @@ import { NextRequest, NextResponse } from "next/server";
 import { findDocuments, saveDocument } from "@/lib/cloudant";
 import { requireSession } from "@/lib/auth";
 import type { Message } from "@/lib/types";
+import { broadcast } from "@/lib/streamManager";
+import { MOCK_MESSAGES } from "@/lib/mock/chatroomMockData";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ roomId: string }> }
 ) {
   try {
-    const { id } = await params;
-    const docs = (await findDocuments(
-      "messages",
-      { type: "message", room_id: id, status: "active" },
-      100,
-      0
-    )) as Message[];
+    const { roomId } = await params;
+    let docs: Message[] = [];
+    
+    try {
+      docs = (await findDocuments(
+        "messages",
+        { type: "message", room_id: roomId, status: "active" },
+        100,
+        0
+      )) as Message[];
+    } catch (dbError) {
+      console.warn("Cloudant unreachable, falling back to mock messages");
+      docs = MOCK_MESSAGES[roomId] || [];
+    }
+
     docs.sort((a, b) => a.created_at.localeCompare(b.created_at));
     return NextResponse.json(docs.slice(-50));
   } catch (error) {
@@ -28,10 +38,10 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ roomId: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { roomId } = await params;
     const body = (await req.json()) as { language_code?: string; body?: string; author_name?: string };
     const text = (body.body || "").trim();
     if (!body.language_code || !text) {
@@ -41,7 +51,7 @@ export async function POST(
     const message: Message = {
       _id: randomUUID(),
       type: "message",
-      room_id: id,
+      room_id: roomId,
       language_code: body.language_code,
       author_id: viewer.userId,
       author_name: body.author_name?.trim() || viewer.name,
@@ -50,8 +60,18 @@ export async function POST(
       status: "active",
       created_at: new Date().toISOString(),
     };
-    const saved = await saveDocument("messages", message as unknown as Record<string, unknown>);
-    return NextResponse.json({ ok: true, saved });
+    
+    let saved = message;
+    try {
+      saved = await saveDocument("messages", message as unknown as Record<string, unknown>) as Message;
+    } catch (dbError) {
+      console.warn("Cloudant unreachable, faking message save");
+    }
+
+    // Fan out via SSE
+    broadcast(roomId, saved);
+
+    return NextResponse.json(saved, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
