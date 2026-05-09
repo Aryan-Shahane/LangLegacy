@@ -52,17 +52,17 @@ audio in → transcribe (local Whisper) → extract vocabulary (IBM watsonx) →
 
 ```env
 # IBM watsonx
-WATSONX_API_KEY=
-WATSONX_PROJECT_ID=
+WATSONX_API_KEY=VDsdoVrV8_73wbQoU19BjhLDFrFz7KyzzTi1WfaoWAO2
+WATSONX_PROJECT_ID=9676ad1a-5085-41bc-b5d9-86dfdcac482c
 WATSONX_URL=https://us-south.ml.cloud.ibm.com
 
 # IBM Cloudant
-CLOUDANT_URL=
-CLOUDANT_API_KEY=
+CLOUDANT_URL=https://1ef189cc-7df4-4958-bae4-ccc3ff5dfcc8-bluemix.cloudantnosqldb.appdomain.cloud
+CLOUDANT_API_KEY=AdzlOkYBiey-Ng71rXoUDmoq5P04RxQWYAjp9ZcGDKff
 
 # Cloudinary (audio file storage)
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_UPLOAD_PRESET=
+CLOUDINARY_CLOUD_NAME=djeo1nkko
+CLOUDINARY_UPLOAD_PRESET=langlegacy
 
 # Local Whisper server
 WHISPER_SERVER_URL=http://localhost:8000
