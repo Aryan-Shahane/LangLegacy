@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import SiteFooter from "@/components/SiteFooter";
 import TopBar from "@/components/TopBar";
 import LanguageCard from "@/components/LanguageCard";
@@ -10,6 +11,7 @@ import SearchBar from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { Language } from "@/lib/types";
+import mauiFishImage from "@/Screenshot 2026-05-09 at 3.22.38 AM.png";
 
 const fallbackLanguages: Language[] = [
   {
@@ -144,7 +146,7 @@ function LearningPanel() {
   );
 }
 
-export default function HomePage() {
+function HomePageContent() {
   const [languages, setLanguages] = useState<Language[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -242,11 +244,21 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          <div className="h-[360px] rounded-2xl bg-gradient-to-br from-[#3B3F42] via-[#151A1E] to-[#07090B]" />
+          <div className="relative h-[360px] overflow-hidden rounded-2xl">
+            <Image src={mauiFishImage} alt="Legend of Maui's Fish artwork" fill className="object-cover" />
+          </div>
         </div>
       </section>
 
       <SiteFooter />
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#FBF9F4]" />}>
+      <HomePageContent />
+    </Suspense>
   );
 }

@@ -130,11 +130,15 @@ export default function LanguageTabsPanel({
           languageCode={languageCode}
           viewerRole={viewerRole}
           onCreateRoom={async (name, description) => {
-            await fetch("/api/rooms", {
+            const res = await fetch("/api/rooms", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ language_code: languageCode, name, description }),
             });
+            if (!res.ok) {
+              const payload = (await res.json().catch(() => ({}))) as { error?: string };
+              throw new Error(payload.error || "Failed to create room.");
+            }
             await loadRooms();
           }}
         />

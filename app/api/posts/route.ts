@@ -28,9 +28,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as Record<string, string | null>;
-    const languageCode = (body.language_code || "").trim();
-    const text = (body.body || "").trim();
+    const body = (await req.json()) as Record<string, unknown>;
+    const languageCode = typeof body.language_code === "string" ? body.language_code.trim() : "";
+    const text = typeof body.body === "string" ? body.body.trim() : "";
     if (!languageCode || !text) {
       return NextResponse.json({ error: "language_code and body are required" }, { status: 400 });
     }
@@ -41,9 +41,9 @@ export async function POST(req: NextRequest) {
       type: "post",
       language_code: languageCode,
       author_id: viewer.userId,
-      author_name: (body.author_name || viewer.name || "Anonymous").toString(),
+      author_name: typeof body.author_name === "string" ? body.author_name.trim() || viewer.name : viewer.name || "Anonymous",
       body: text,
-      audio_url: body.audio_url || null,
+      audio_url: typeof body.audio_url === "string" ? body.audio_url : null,
       reactions: {},
       reaction_users: {},
       report_count: 0,

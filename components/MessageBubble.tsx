@@ -5,21 +5,35 @@ import type { Message } from "@/lib/types";
 
 export default function MessageBubble({
   message,
+  isOwn,
   onReport,
 }: {
   message: Message;
+  isOwn?: boolean;
   onReport: (payload: { reason: "inaccurate" | "offensive" | "spam" | "other"; details: string }) => Promise<void>;
 }) {
+  const time = new Date(message.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
   return (
-    <div className="rounded border border-slate-800 bg-slate-900 p-2">
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <div className="text-xs text-slate-400">
-          <span className="font-medium text-slate-200">{message.author_name}</span> ·{" "}
-          {new Date(message.created_at).toLocaleTimeString()}
+    <div className={`group flex ${isOwn ? "justify-end" : "justify-start"}`}>
+      <div className={`max-w-[82%] space-y-1 ${isOwn ? "items-end" : "items-start"}`}>
+        <div className={`flex items-center gap-2 text-[11px] ${isOwn ? "justify-end text-[#7F5D54]" : "text-[#6F746E]"}`}>
+          <span className="font-medium">{isOwn ? "You" : message.author_name}</span>
+          <span>{time}</span>
         </div>
-        <ReportModal compact onSubmit={onReport} />
+        <div
+          className={`rounded-2xl border px-4 py-3 text-[15px] leading-relaxed shadow-sm ${
+            isOwn
+              ? "rounded-tr-md border-[#9F4026]/45 bg-[#9F4026] text-white"
+              : "rounded-tl-md border-[#C3C8C1]/35 bg-[#FFFFFF]/90 text-[#1B1C19]"
+          }`}
+        >
+          {message.body}
+        </div>
+        <div className={`${isOwn ? "flex justify-end" : "flex justify-start"} opacity-0 transition-opacity group-hover:opacity-100`}>
+          <ReportModal compact onSubmit={onReport} />
+        </div>
       </div>
-      <p className="text-sm text-slate-100">{message.body}</p>
     </div>
   );
 }

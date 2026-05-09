@@ -6,12 +6,13 @@ import type { Message } from "@/lib/types";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const docs = (await findDocuments(
       "messages",
-      { type: "message", room_id: params.id, status: "active" },
+      { type: "message", room_id: id, status: "active" },
       100,
       0
     )) as Message[];
@@ -27,9 +28,10 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = (await req.json()) as { language_code?: string; body?: string; author_name?: string };
     const text = (body.body || "").trim();
     if (!body.language_code || !text) {
@@ -39,7 +41,7 @@ export async function POST(
     const message: Message = {
       _id: randomUUID(),
       type: "message",
-      room_id: params.id,
+      room_id: id,
       language_code: body.language_code,
       author_id: viewer.userId,
       author_name: body.author_name?.trim() || viewer.name,

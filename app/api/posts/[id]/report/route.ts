@@ -5,9 +5,10 @@ import type { ReportReason } from "@/lib/types";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = (await req.json()) as { reason?: ReportReason; details?: string; language_code?: string };
     if (!body.reason || !body.language_code) {
       return NextResponse.json({ error: "reason and language_code are required" }, { status: 400 });
@@ -15,7 +16,7 @@ export async function POST(
     const viewer = getViewerIdentityFromHeaders(req.headers);
     const saved = await createReportAndMarkTarget({
       targetType: "post",
-      targetId: params.id,
+      targetId: id,
       languageCode: body.language_code,
       reporterId: viewer.userId,
       reason: body.reason,
