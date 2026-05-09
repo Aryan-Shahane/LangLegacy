@@ -11,24 +11,24 @@ import { cn } from "@/lib/utils";
 const LANDING_TABS = [
   { id: "dictionary", label: "Dictionary" },
   { id: "community", label: "Community" },
-  { id: "chatrooms", label: "Chatrooms" },
-  { id: "learning", label: "Learning" },
+  { id: "learn", label: "Learn" },
 ] as const;
 
-/** Per-language hub: Dictionary opens the `{code}` archive. */
-const LANGUAGE_TABS = [
+/** Per-language hub: Dictionary opens the `{code}` archive base tabs (Moderator appended when permitted). */
+const LANGUAGE_TABS_CORE = [
   { id: "dictionary", label: "Dictionary" },
   { id: "community", label: "Community" },
-  { id: "chatrooms", label: "Chatrooms" },
-  { id: "learning", label: "Learning" },
+  { id: "learn", label: "Learn" },
 ] as const;
 
 type Props = {
   activeTab: string;
   languageCode?: string;
+  /** Show Moderator shortcut for env / role moderators while viewing a language page. */
+  canModerate?: boolean;
 };
 
-export default function TopBar({ activeTab, languageCode }: Props) {
+export default function TopBar({ activeTab, languageCode, canModerate = false }: Props) {
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -70,7 +70,12 @@ export default function TopBar({ activeTab, languageCode }: Props) {
     }
   };
 
-  const tabs = languageCode ? LANGUAGE_TABS : LANDING_TABS;
+  const migratedActive =
+    activeTab === "learning" || activeTab === "chatrooms" ? "learn" : activeTab;
+
+  const tabs = languageCode
+    ? [...LANGUAGE_TABS_CORE, ...(canModerate ? ([{ id: "moderator", label: "Moderator" }] as const) : [])]
+    : LANDING_TABS;
 
   return (
     <header className="sticky top-0 z-40 border-b border-[#C3C8C1]/20 bg-[#1B3022] text-[#D0E9D4]">
@@ -83,9 +88,17 @@ export default function TopBar({ activeTab, languageCode }: Props) {
             {tabs.map((tab) => {
               let href: string;
               if (languageCode) {
-                href = tab.id === "dictionary" ? `/${languageCode}` : `/${languageCode}?tab=${tab.id}`;
+                if (tab.id === "dictionary") {
+                  href = `/${languageCode}`;
+                } else if (tab.id === "community") {
+                  href = `/${languageCode}?tab=community&section=forum`;
+                } else {
+                  href = `/${languageCode}?tab=${tab.id}`;
+                }
               } else if (tab.id === "dictionary") {
                 href = "/#dictionary";
+              } else if (tab.id === "community") {
+                href = `/mi?tab=community&section=forum`;
               } else {
                 href = `/mi?tab=${tab.id}`;
               }
@@ -95,7 +108,7 @@ export default function TopBar({ activeTab, languageCode }: Props) {
                   href={href}
                   className={cn(
                     "rounded-full px-4 py-1.5 text-sm font-medium transition-all active:scale-[0.98]",
-                    activeTab === tab.id ? "bg-[#B4CDB8] text-[#0B2013]" : "text-[#D0E9D4] hover:bg-[#30483A]"
+                    migratedActive === tab.id ? "bg-[#B4CDB8] text-[#0B2013]" : "text-[#D0E9D4] hover:bg-[#30483A]"
                   )}
                 >
                   {tab.label}

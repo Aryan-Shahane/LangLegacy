@@ -26,16 +26,7 @@ export default function DictionaryEntry({ entry }: { entry: Entry }) {
           <p className="text-lg text-[#1B1C19]">{entry.translation}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <ReportModal
-            compact
-            onSubmit={async (payload) => {
-              await fetch(`/api/entries/${entry._id}/report`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ...payload, language_code: entry.language_code }),
-              });
-            }}
-          />
+          <ReportModal compact contentType="entry" contentId={entry._id} languageCode={entry.language_code} />
         </div>
       </div>
 

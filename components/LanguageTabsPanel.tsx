@@ -1,155 +1,145 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useMemo } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import DictionaryClient from "@/app/[language]/DictionaryClient";
-import CommunityFeed from "@/components/CommunityFeed";
-import FlashCard from "@/components/FlashCard";
-import ProgressBar from "@/components/ProgressBar";
-import RoomList from "@/components/RoomList";
-import SessionSummary from "@/components/SessionSummary";
-import type { Entry, LearningProgress, Room, UserRole } from "@/lib/types";
+import CommunityHub from "@/components/CommunityHub";
+import LearnSession from "@/components/LearnSession";
+import ModeratorQueue from "@/components/moderator/ModeratorQueue";
+import { Card } from "@/components/ui/card";
+import type { UserRole } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
-type TabKey = "dictionary" | "community" | "chatrooms" | "learning";
+type TabKey = "dictionary" | "learn" | "community" | "moderator";
 
-export default function LanguageTabsPanel({
+const CORE_TABS: Array<{ key: TabKey; label: string }> = [
+  { key: "dictionary", label: "Dictionary" },
+  { key: "learn", label: "Learn" },
+  { key: "community", label: "Community" },
+];
+
+function tabHref(languageCode: string, tab: TabKey, communitySection: string | null) {
+  if (tab === "dictionary") return `/${languageCode}`;
+  const params = new URLSearchParams();
+  params.set("tab", tab);
+  if (tab === "community") params.set("section", communitySection || "forum");
+  return `/${languageCode}?${params.toString()}`;
+}
+
+function CommunitySuspenseFallback() {
+  return <p className="text-sm text-[#757C76]">Loading community hub…</p>;
+}
+
+function LanguageTabsPanelInner({
   languageCode,
   viewerRole,
+  canModerate,
 }: {
   languageCode: string;
   viewerRole: UserRole;
+  canModerate: boolean;
 }) {
-  const [tab, setTab] = useState<TabKey>("dictionary");
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [progress, setProgress] = useState<LearningProgress | null>(null);
-  const [cards, setCards] = useState<Entry[]>([]);
-  const [queue, setQueue] = useState<Entry[]>([]);
-  const [correct, setCorrect] = useState(0);
-  const [seen, setSeen] = useState(0);
-  const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [completed, setCompleted] = useState(false);
+  void viewerRole;
   const searchParams = useSearchParams();
+  const rawTab = (searchParams.get("tab") || "dictionary").toLowerCase();
+  const communitySection = searchParams.get("section");
 
-  const loadRooms = async () => {
-    const res = await fetch(`/api/rooms?language_code=${encodeURIComponent(languageCode)}`);
-    if (!res.ok) return;
-    setRooms((await res.json()) as Room[]);
-  };
+  const migratedTab = rawTab === "learning" || rawTab === "chatrooms" ? "learn" : rawTab;
+  let activeTab: TabKey = "dictionary";
+  if (migratedTab === "dictionary" || migratedTab === "learn" || migratedTab === "community" || migratedTab === "moderator") {
+    activeTab = migratedTab;
+  }
 
-  const loadProgress = async () => {
-    const res = await fetch(`/api/learning/progress?language_code=${encodeURIComponent(languageCode)}`);
-    if (!res.ok) return;
-    setProgress((await res.json()) as LearningProgress);
-  };
+  const showModeratorView = activeTab === "moderator";
 
-  const loadCards = async () => {
-    const res = await fetch(`/api/learning/cards?language_code=${encodeURIComponent(languageCode)}&n=10`);
-    if (!res.ok) return;
-    const next = (await res.json()) as Entry[];
-    setCards(next);
-    setQueue(next);
-    setCorrect(0);
-    setSeen(0);
-    setStartedAt(Date.now());
-    setCompleted(false);
-  };
-
-  useEffect(() => {
-    const fromUrl = searchParams.get("tab");
-    if (fromUrl === "community" || fromUrl === "chatrooms" || fromUrl === "learning") {
-      setTab(fromUrl);
-      return;
-    }
-    setTab("dictionary");
-  }, [searchParams]);
-
-  useEffect(() => {
-    if (tab === "chatrooms") void loadRooms();
-    if (tab === "learning") {
-      void loadProgress();
-      if (!cards.length) void loadCards();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, languageCode]);
-
-  const activeCard = queue[0];
-  const durationSeconds = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : 0;
-
-  const learningBody =
-    completed ? (
-      <SessionSummary
-        seen={seen}
-        correct={correct}
-        durationSeconds={durationSeconds}
-        onRestart={() => void loadCards()}
-      />
-    ) : !activeCard ? (
-      <p className="text-sm text-slate-500">Loading cards...</p>
-    ) : (
-      <FlashCard
-        entry={activeCard}
-        onRate={(score) => {
-          const nextSeen = seen + 1;
-          const nextCorrect = score === "got" ? correct + 1 : correct;
-          setSeen(nextSeen);
-          setCorrect(nextCorrect);
-          setQueue((prev) => {
-            const [first, ...rest] = prev;
-            if (!first) return prev;
-            const updated = score === "missed" ? [...rest, first] : rest;
-            if (updated.length === 0) {
-              setCompleted(true);
-              void fetch("/api/learning/sessions", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  language_code: languageCode,
-                  cards_seen: nextSeen,
-                  cards_correct: nextCorrect,
-                  duration_seconds: durationSeconds,
-                }),
-              }).then(() => loadProgress());
-            }
-            return updated;
-          });
-        }}
-      />
-    );
+  const tabItems = useMemo(() => {
+    const list = [...CORE_TABS];
+    if (canModerate) list.push({ key: "moderator", label: "Moderator" });
+    return list;
+  }, [canModerate]);
 
   return (
-    <div className="space-y-4">
-      {tab === "dictionary" ? <DictionaryClient languageCode={languageCode} /> : null}
+    <div className="space-y-8">
+      <nav
+        className="flex flex-wrap gap-2 rounded-full border border-[#C3C8C1]/35 bg-[#F5F3EE] p-2"
+        aria-label="Language archive tabs"
+      >
+        {tabItems.map(({ key, label }) => (
+          <Link
+            key={key}
+            href={tabHref(languageCode, key, communitySection)}
+            className={cn(
+              "rounded-full px-4 py-2 text-sm font-semibold transition-all active:scale-[0.98]",
+              activeTab === key ? "bg-[#1B3022] text-white" : "text-[#434843] hover:bg-[#E8EFE9]"
+            )}
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
 
-      {tab === "community" ? (
-        <CommunityFeed languageCode={languageCode} />
-      ) : null}
+      <div role="tabpanel">
+        {activeTab === "dictionary" ? <DictionaryClient languageCode={languageCode} /> : null}
+        {activeTab === "learn" ? <LearnSession languageCode={languageCode} /> : null}
 
-      {tab === "chatrooms" ? (
-        <RoomList
-          rooms={rooms}
-          languageCode={languageCode}
-          viewerRole={viewerRole}
-          onCreateRoom={async (name, description) => {
-            const res = await fetch("/api/rooms", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ language_code: languageCode, name, description }),
-            });
-            if (!res.ok) {
-              const payload = (await res.json().catch(() => ({}))) as { error?: string };
-              throw new Error(payload.error || "Failed to create room.");
-            }
-            await loadRooms();
-          }}
-        />
-      ) : null}
+        {activeTab === "community" ? (
+          <Suspense fallback={<CommunitySuspenseFallback />}>
+            <CommunityHub
+              languageCode={languageCode}
+              section={communitySection}
+              queryString={searchParams.toString()}
+            />
+          </Suspense>
+        ) : null}
 
-      {tab === "learning" ? (
-        <div className="space-y-3">
-          {progress ? <ProgressBar progress={progress} cardIndex={Math.min(seen + 1, cards.length || 0)} cardTotal={cards.length || 0} /> : null}
-          {learningBody}
-        </div>
-      ) : null}
+        {showModeratorView && canModerate ? (
+          <div className="space-y-4">
+            <Card className="border-[#C3C8C1]/35 bg-[#F5F3EE] p-5">
+              <h2 className="font-serif text-3xl text-[#061B0E]">Report queue · {languageCode}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-[#434843]">
+                Remove content hides it archive-wide when someone has marked it harmful; dismiss clears the alert while keeping the
+                post, poem, or story live.
+              </p>
+              <Link href="/mod/reports" className="mt-3 inline-block text-xs font-semibold uppercase tracking-[0.14em] text-[#1B3022] underline">
+                Open global queue
+              </Link>
+            </Card>
+            <ModeratorQueue languageCodeFilter={languageCode} />
+          </div>
+        ) : null}
+
+        {showModeratorView && !canModerate ? (
+          <Card className="border border-rose-200 bg-rose-50 p-6 text-sm text-rose-900">
+            <p>You need moderator access to review reported content.</p>
+            <Link className="mt-3 inline-block font-semibold underline" href={`/${languageCode}`}>
+              Back to dictionary
+            </Link>
+          </Card>
+        ) : null}
+      </div>
     </div>
+  );
+}
+
+function PanelFallback() {
+  return (
+    <div className="space-y-8">
+      <div className="h-14 animate-pulse rounded-full bg-[#E8EDE9]" />
+      <div className="min-h-[200px] animate-pulse rounded-3xl bg-[#EFECE6]" />
+    </div>
+  );
+}
+
+/** COMMUNITY tab shell: Dictionary | Learn | Community hub | Moderator (role / env gated). */
+export default function LanguageTabsPanel(props: {
+  languageCode: string;
+  viewerRole: UserRole;
+  canModerate: boolean;
+}) {
+  return (
+    <Suspense fallback={<PanelFallback />}>
+      <LanguageTabsPanelInner {...props} />
+    </Suspense>
   );
 }

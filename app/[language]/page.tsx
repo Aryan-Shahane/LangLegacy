@@ -1,4 +1,4 @@
-import { getSessionFromCookie } from "@/lib/auth";
+import { getSessionFromCookie, viewerCanModerate } from "@/lib/auth";
 import SiteFooter from "@/components/SiteFooter";
 import TopBar from "@/components/TopBar";
 import { getDocument } from "@/lib/cloudant";
@@ -51,20 +51,25 @@ export default async function LanguageDictionaryPage({
   searchParams,
 }: {
   params: Promise<{ language: string }>;
-  searchParams?: Promise<{ tab?: string }>;
+  searchParams?: Promise<{ tab?: string; section?: string }>;
 }) {
   const { language } = await params;
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const rawDoc = (await getDocument("languages", language)) as Record<string, unknown> | null;
   const header = coerceLanguageHeader(rawDoc);
   const viewer = await getSessionFromCookie();
+  const canModerate = viewerCanModerate(viewer);
   const dictionaryTitle = header.name || `${language} Dictionary`;
-  const activeTab = (resolvedSearchParams?.tab || "dictionary").toLowerCase();
-  const topBarActiveTab = activeTab === "dictionary" || !resolvedSearchParams?.tab ? "dictionary" : activeTab;
+  const qpTab = resolvedSearchParams?.tab?.toLowerCase();
+  const migrated = qpTab === "learning" || qpTab === "chatrooms" ? "learn" : qpTab || "dictionary";
+  const topBarActiveTab =
+    migrated === "learn" || migrated === "community" || migrated === "moderator"
+      ? migrated
+      : "dictionary";
 
   return (
     <div className="min-h-screen bg-[#FBF9F4] text-[#1B1C19]">
-      <TopBar activeTab={topBarActiveTab} languageCode={language} />
+      <TopBar activeTab={topBarActiveTab} languageCode={language} canModerate={canModerate} />
 
       <section className="px-6 py-12 md:px-12">
         <div className="mx-auto max-w-6xl space-y-4 text-center">
@@ -105,7 +110,7 @@ export default async function LanguageDictionaryPage({
 
       <section className="px-6 pb-16 md:px-12">
         <div className="mx-auto max-w-6xl">
-          <LanguageTabsPanel languageCode={language} viewerRole={viewer?.role || "user"} />
+          <LanguageTabsPanel languageCode={language} viewerRole={viewer?.role || "user"} canModerate={canModerate} />
         </div>
       </section>
 

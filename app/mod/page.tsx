@@ -4,10 +4,15 @@ import ModStats from "@/components/ModStats";
 import type { Report } from "@/lib/types";
 
 export default async function ModOverviewPage() {
-  const reports = (await findDocuments("reports", { type: "report", status: "open" }, 400, 0)) as Report[];
+  const reports = (await findDocuments(
+    "reports",
+    { type: "report", status: { $in: ["open", "pending"] } },
+    400,
+    0
+  )) as Report[];
   const highPriorityKeys = new Map<string, number>();
   for (const report of reports) {
-    const key = `${report.target_type}:${report.target_id}`;
+    const key = `${report.content_type || report.target_type}:${report.content_id || report.target_id}`;
     highPriorityKeys.set(key, (highPriorityKeys.get(key) || 0) + 1);
   }
   const highPriority = Array.from(highPriorityKeys.values()).filter((count) => count >= 2).length;

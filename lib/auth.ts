@@ -2,6 +2,7 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getDocument } from "@/lib/cloudant";
+import { isEnvModerator } from "@/lib/moderator";
 import type { User, UserRole } from "@/lib/types";
 
 export type SessionIdentity = {
@@ -60,6 +61,27 @@ export async function requireModeratorOrAdmin(): Promise<SessionIdentity> {
     throw new Error("Forbidden");
   }
   return viewer;
+}
+
+/** Moderator dashboard: role in DB or `MODERATOR_IDS` (COMMUNITY.md). */
+export async function requireModeratorAccess(): Promise<SessionIdentity> {
+  const viewer = await getSessionFromCookie();
+  if (!viewer) throw new Error("Unauthorized");
+  if (
+    viewer.role === "moderator" ||
+    viewer.role === "admin" ||
+    isEnvModerator(viewer.userId)
+  ) {
+    return viewer;
+  }
+  throw new Error("Forbidden");
+}
+
+export function viewerCanModerate(identity: SessionIdentity | null): boolean {
+  return Boolean(
+    identity &&
+      (identity.role === "moderator" || identity.role === "admin" || isEnvModerator(identity.userId))
+  );
 }
 
 export async function requireSession(): Promise<SessionIdentity> {

@@ -1,100 +1,100 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useExclusivePlayback } from "@/hooks/useExclusivePlayback";
+import AudioPlayer from "@/components/AudioPlayer";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import type { Entry } from "@/lib/types";
 
 export default function FlashCard({
   entry,
-  onRate,
+  onGot,
+  onMissed,
 }: {
   entry: Entry;
-  onRate: (score: "missed" | "almost" | "got") => void;
+  onGot: () => void;
+  onMissed: () => void;
 }) {
-  const [revealed, setRevealed] = useState(false);
-  const { toggle, isPlaying, hasAudio } = useExclusivePlayback(entry.audio_url);
+  const [flipped, setFlipped] = useState(false);
+  const { toggle, hasAudio } = useExclusivePlayback(entry.audio_url);
 
-  const definitionPeek = entry.definition?.trim() || entry.phonetic || null;
+  useEffect(() => {
+    if (flipped && hasAudio && entry.audio_url) {
+      const t = window.setTimeout(() => toggle(), 120);
+      return () => window.clearTimeout(t);
+    }
+    return undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional one-shot autoplay after flip
+  }, [flipped, hasAudio, entry.audio_url]);
+
+  const frontTranslation = entry.translation?.trim() || entry.definition?.trim() || "—";
+  const phoneticLine = entry.phonetic?.trim() || "";
 
   return (
-    <div className="space-y-6">
-      <Card className="relative mx-auto max-w-xl border-[#C3C8C1]/35 bg-[#F5F3EE] p-10 text-center">
-        <h1 className="font-serif text-5xl tracking-tight text-[#061B0E]">{entry.word}</h1>
-        {hasAudio ? (
+    <div className="mx-auto w-full max-w-xl space-y-6">
+      <div className="relative h-[340px]" style={{ perspective: "1400px" }}>
+        <div
+          className="relative h-full w-full transition-transform duration-700 ease-out"
+          style={{
+            transformStyle: "preserve-3d",
+            transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+          }}
+        >
           <button
             type="button"
-            onClick={() => toggle()}
-            className="mx-auto mt-5 grid h-12 w-12 place-content-center rounded-full bg-[#9F4026] text-white transition-transform active:scale-95"
-            aria-label={isPlaying ? "Pause audio" : "Play audio"}
+            onClick={() => setFlipped(true)}
+            className="absolute inset-0 flex flex-col overflow-hidden rounded-3xl border border-[#C3C8C1]/35 bg-[#F5F3EE] p-10 text-left shadow-sm outline-none transition hover:bg-[#EFEDE8] focus-visible:ring-2 focus-visible:ring-[#9F4026]/40"
+            style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
           >
-            {isPlaying ? "❚❚" : "🔊"}
+            <p className="mb-6 text-xs uppercase tracking-[0.35em] text-[#757C76]">English cue</p>
+            <div className="flex flex-1 flex-col justify-center">
+              <p className="text-center font-serif text-[2.125rem] leading-snug tracking-tight text-[#061B0E]">{frontTranslation}</p>
+            </div>
+            <p className="text-center text-[11px] text-[#737973]">
+              Tap whenever you recall the endangered-language phrase — the card will flip to reveal pronunciation and audio.
+            </p>
           </button>
-        ) : null}
 
-        <div className="my-8 h-px w-full bg-gradient-to-r from-transparent via-[#C3C8C1]/45 to-transparent" />
-
-        {revealed ? (
-          <div className="space-y-3">
-            <p className="font-serif text-2xl italic text-[#9F4026]">{entry.translation}</p>
-            {entry.definition?.trim() ? (
-              <p className="mx-auto max-w-md text-sm leading-relaxed text-[#434843]">{entry.definition.trim()}</p>
-            ) : null}
-            {entry.example_sentence ? (
-              <p className="mx-auto max-w-md text-sm leading-relaxed text-[#434843]">
-                “{entry.example_sentence}”
-                {entry.example_translation ? ` — ${entry.example_translation}` : ""}
-              </p>
-            ) : (
-              <p className="mx-auto max-w-md text-sm leading-relaxed text-[#434843]">
-                Tap a rating below to continue your session.
-              </p>
-            )}
+          <div
+            className="absolute inset-0 flex flex-col overflow-hidden rounded-3xl border border-[#C3C8C1]/35 bg-[#FBF9F4] p-10 shadow-inner"
+            style={{
+              transform: "rotateY(180deg)",
+              backfaceVisibility: "hidden",
+              WebkitBackfaceVisibility: "hidden",
+            }}
+          >
+            <p className="mb-2 text-xs uppercase tracking-[0.35em] text-[#757C76]">Language side</p>
+            <div className="flex flex-1 flex-col justify-center gap-4 text-center">
+              <span className="font-serif text-5xl tracking-tight text-[#061B0E]">{entry.word}</span>
+              {phoneticLine ? <span className="text-sm italic text-[#757C76]">{phoneticLine}</span> : null}
+              {hasAudio ? <AudioPlayer audio_url={entry.audio_url} /> : null}
+            </div>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Button
+                variant="outline"
+                type="button"
+                className="min-w-[7.5rem] border-rose-400/55 text-rose-800 hover:bg-[#FFDAD6]"
+                onClick={() => onMissed()}
+              >
+                Missed it ❌
+              </Button>
+              <Button type="button" className="min-w-[7.5rem] bg-[#1B3022] hover:bg-[#0F1F15]" onClick={() => onGot()}>
+                Got it ✅
+              </Button>
+            </div>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {definitionPeek ? <p className="text-sm text-[#434843]">{definitionPeek}</p> : null}
-            <Button variant="outline" onClick={() => setRevealed(true)} className="mx-auto">
-              Show answer
-            </Button>
-          </div>
-        )}
-      </Card>
-
-      {revealed ? (
-        <div className="mx-auto flex max-w-xl flex-wrap justify-center gap-4">
-          <Button
-            variant="outline"
-            className="h-12 w-40 justify-center border-rose-400/50 text-rose-700 hover:bg-[#FFDAD6]"
-            onClick={() => {
-              setRevealed(false);
-              onRate("missed");
-            }}
-          >
-            ✕ Missed
-          </Button>
-          <Button
-            variant="outline"
-            className="h-12 w-40 justify-center border-[#737973]/40 text-[#434843] hover:bg-[#EAE8E3]"
-            onClick={() => {
-              setRevealed(false);
-              onRate("almost");
-            }}
-          >
-            ~ Almost
-          </Button>
-          <Button
-            className="h-12 w-40 justify-center bg-[#1B3022] text-white hover:bg-[#061B0E]"
-            onClick={() => {
-              setRevealed(false);
-              onRate("got");
-            }}
-          >
-            ✓ Got it
-          </Button>
         </div>
-      ) : null}
+      </div>
+
+      {!flipped ? (
+        <p className="text-center text-xs text-[#757C76]">
+          Think of how you would pronounce the endangered-language wording before flipping.
+        </p>
+      ) : (
+        <p className="text-center text-[11px] text-[#737973]">
+          Mark honestly — missed cards shuffle back into the deck until you nail them all.
+        </p>
+      )}
     </div>
   );
 }

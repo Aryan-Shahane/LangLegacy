@@ -55,24 +55,77 @@ export type User = {
   created_at: string;
 };
 
-export type ReportReason = "inaccurate" | "offensive" | "spam" | "other";
+/** Legacy + COMMUNITY.md report reasons */
+export type ReportReason =
+  | "inaccurate"
+  | "offensive"
+  | "spam"
+  | "other"
+  | "inaccurate_translation"
+  | "offensive_content"
+  | "incorrect_audio";
 
 export type ModerationStatus = "active" | "under_review" | "removed";
+
+/** COMMUNITY hub forum thread (stored in Cloudant `posts`). */
+export type ForumSection = "forum";
 
 export type Post = {
   _id: string;
   type?: "post";
+  section?: ForumSection;
   language_code: string;
   author_id: string;
   author_name: string;
   body: string;
-  audio_url: string | null;
+  audio_url?: string | null;
+  parent_id?: string | null;
+  root_id?: string | null;
+  depth?: number;
+  /** @deprecated use parent_id */
   parent_post_id?: string | null;
   reply_to_author?: string | null;
-  reactions: Record<string, number>;
+  reactions?: Record<string, number>;
   reaction_users?: Record<string, string[]>;
-  report_count: number;
-  status: ModerationStatus;
+  report_count?: number;
+  status?: ModerationStatus;
+  created_at: string;
+};
+
+/** COMMUNITY poetry DB */
+export type Poem = {
+  _id: string;
+  type?: "poem";
+  language_code: string;
+  title: string;
+  author_name: string;
+  author_id?: string;
+  body_original: string;
+  body_translation: string;
+  audio_url: string | null;
+  reactions: Record<string, string[]>;
+  report_count?: number;
+  status?: ModerationStatus;
+  created_at: string;
+};
+
+/** COMMUNITY stories DB */
+export type Story = {
+  _id: string;
+  type?: "story";
+  language_code: string;
+  title: string;
+  author_name: string;
+  author_id?: string;
+  description: string;
+  audio_url: string | null;
+  transcript: string;
+  transcript_translation: string;
+  duration_seconds: number;
+  tags: string[];
+  reactions: Record<string, string[]>;
+  report_count?: number;
+  status?: ModerationStatus;
   created_at: string;
 };
 
@@ -99,21 +152,32 @@ export type Message = {
   created_at: string;
 };
 
-export type ReportTargetType = "entry" | "post" | "message";
-export type ReportStatus = "open" | "resolved_removed" | "resolved_kept";
+export type ReportTargetType = "entry" | "post" | "message" | "poem" | "story";
+
+export type ReportStatus =
+  | "open"
+  | "resolved_removed"
+  | "resolved_kept"
+  | "pending"
+  | "removed"
+  | "dismissed";
 
 export type Report = {
   _id: string;
   type?: "report";
-  target_type: ReportTargetType;
-  target_id: string;
+  target_type?: ReportTargetType;
+  target_id?: string;
+  /** COMMUNITY.md canonical target reference */
+  content_type?: ReportTargetType;
+  content_id?: string;
   language_code: string;
   reporter_id: string;
   reason: ReportReason;
-  details: string | null;
+  details?: string | null;
+  note?: string | null;
   status: ReportStatus;
-  resolved_by: string | null;
-  resolved_at: string | null;
+  resolved_by?: string | null;
+  resolved_at?: string | null;
   created_at: string;
 };
 

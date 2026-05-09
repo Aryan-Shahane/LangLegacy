@@ -1,7 +1,7 @@
 "use client";
 
 import ReportModal from "@/components/ReportModal";
-import type { Message } from "@/lib/types";
+import type { Message, ReportReason } from "@/lib/types";
 
 export default function MessageBubble({
   message,
@@ -10,7 +10,7 @@ export default function MessageBubble({
 }: {
   message: Message;
   isOwn?: boolean;
-  onReport: (payload: { reason: "inaccurate" | "offensive" | "spam" | "other"; details: string }) => Promise<void>;
+  onReport: (payload: { reason: ReportReason; details: string }) => Promise<void>;
 }) {
   const time = new Date(message.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
