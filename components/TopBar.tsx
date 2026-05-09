@@ -7,30 +7,26 @@ import NotificationsBell from "@/components/NotificationsBell";
 import LanguageSwapDropdown from "@/components/LanguageSwapDropdown";
 import { cn } from "@/lib/utils";
 
-/** Landing `/`: first nav item is Dictionary (language explorer / archives scroll target). */
+/** Landing `/`: Dictionary + Community + Learn anchors. */
 const LANDING_TABS = [
   { id: "dictionary", label: "Dictionary" },
   { id: "community", label: "Community" },
   { id: "learn", label: "Learn" },
-  { id: "chatrooms", label: "Chatrooms" },
 ] as const;
 
-/** Per-language hub: Dictionary opens the `{code}` archive base tabs (Moderator appended when permitted). */
-const LANGUAGE_TABS_CORE = [
+/** Per-language: Dictionary · Community hub · Learn (moderation under `/mod` only). */
+const LANGUAGE_TABS = [
   { id: "dictionary", label: "Dictionary" },
-  { id: "learn", label: "Learn" },
   { id: "community", label: "Community" },
-  { id: "chatrooms", label: "Chatrooms" },
+  { id: "learn", label: "Learn" },
 ] as const;
 
 type Props = {
   activeTab: string;
   languageCode?: string;
-  /** Show Moderator shortcut for env / role moderators while viewing a language page. */
-  canModerate?: boolean;
 };
 
-export default function TopBar({ activeTab, languageCode, canModerate = false }: Props) {
+export default function TopBar({ activeTab, languageCode }: Props) {
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -72,11 +68,16 @@ export default function TopBar({ activeTab, languageCode, canModerate = false }:
     }
   };
 
-  const migratedActive = activeTab === "learning" ? "learn" : activeTab;
+  const migratedActive =
+    activeTab === "learning"
+      ? "learn"
+      : activeTab === "chatrooms"
+        ? "community"
+        : activeTab === "moderator"
+          ? "dictionary"
+          : activeTab;
 
-  const tabs = languageCode
-    ? [...LANGUAGE_TABS_CORE, ...(canModerate ? ([{ id: "moderator", label: "Moderator" }] as const) : [])]
-    : LANDING_TABS;
+  const tabs = languageCode ? LANGUAGE_TABS : LANDING_TABS;
 
   return (
     <header className="sticky top-0 z-40 border-b border-[#C3C8C1]/20 bg-[#1B3022] text-[#D0E9D4]">
@@ -101,7 +102,7 @@ export default function TopBar({ activeTab, languageCode, canModerate = false }:
               } else if (tab.id === "community") {
                 href = `/mi?tab=community&section=forum`;
               } else {
-                href = `/mi?tab=${tab.id}`;
+                href = `/mi?tab=learn`;
               }
               return (
                 <Link

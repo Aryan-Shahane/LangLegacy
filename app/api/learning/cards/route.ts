@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { coerceEntry } from "@/lib/entryCoercion";
+import { entryHasMeaningfulTranslation } from "@/lib/entryTranslation";
 import { findDocuments } from "@/lib/cloudant";
 import type { Entry } from "@/lib/types";
 
@@ -27,8 +29,11 @@ export async function GET(req: NextRequest) {
       ],
     };
 
-    const docs = (await findDocuments("entries", selector, 300, 0)) as Entry[];
-    const picked = shuffle(docs).slice(0, Math.max(1, Math.min(n, 30)));
+    const raw = (await findDocuments("entries", selector, 300, 0)) as Record<string, unknown>[];
+    const usable = raw
+      .map(coerceEntry)
+      .filter((e: Entry) => entryHasMeaningfulTranslation(e) && e.word.trim().length > 0);
+    const picked = shuffle(usable).slice(0, Math.max(1, Math.min(n, 30)));
     return NextResponse.json(picked);
   } catch (error) {
     return NextResponse.json(

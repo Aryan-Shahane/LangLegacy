@@ -9,10 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 export default function PoemComposer({
   languageCode,
   languageDisplayName,
+  translationsLocked,
   onCreated,
 }: {
   languageCode: string;
   languageDisplayName: string;
+  translationsLocked: boolean;
   onCreated: () => Promise<void>;
 }) {
   const [title, setTitle] = useState("");
@@ -53,7 +55,9 @@ export default function PoemComposer({
     <Card className="space-y-3 bg-[#F5F3EE] p-5">
       <p className="text-xs uppercase tracking-[0.2em] text-[#737973]">Share a poem</p>
       <p className="text-[11px] leading-relaxed text-[#757C76]">
-        After you publish, English appears under your poem automatically, using word matches from this archive ({languageDisplayName}) dictionary.
+        {translationsLocked
+          ? "This archive is in archive mode — poems stay in the original language here; dictionary English glosses appear after the language graduates to full mode."
+          : `After you publish, English appears under your poem automatically, using word matches from this archive (${languageDisplayName}) dictionary.`}
       </p>
       <Input
         placeholder="Title"

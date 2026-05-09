@@ -11,11 +11,13 @@ export default function PoemCard({
   poem,
   languageCode,
   languageDisplayName,
+  translationsLocked,
   onReact,
 }: {
   poem: Poem;
   languageCode: string;
   languageDisplayName: string;
+  translationsLocked: boolean;
   onReact: (emoji: string) => Promise<void>;
 }) {
   const when = useMemo(() => new Date(poem.created_at).toLocaleString(), [poem.created_at]);
@@ -38,7 +40,13 @@ export default function PoemCard({
         <p className="font-serif text-lg leading-relaxed text-[#1B1C19] whitespace-pre-wrap">{poem.body_original}</p>
         <div className="mt-4 border-t border-[#C3C8C1]/35 pt-4">
           <p className="mb-2 text-[11px] uppercase tracking-[0.12em] text-[#757C76]">English (dictionary gloss)</p>
-          <p className="text-sm leading-relaxed text-[#434843] whitespace-pre-wrap">{poem.body_translation}</p>
+          {translationsLocked ? (
+            <p className="text-sm italic leading-relaxed text-[#757C76]">
+              Locked in archive mode — English glossary lines unlock when translation coverage grows and this language switches to full mode.
+            </p>
+          ) : (
+            <p className="text-sm leading-relaxed text-[#434843] whitespace-pre-wrap">{poem.body_translation}</p>
+          )}
         </div>
       </div>
 

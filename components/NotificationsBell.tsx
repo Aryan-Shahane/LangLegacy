@@ -29,6 +29,7 @@ export default function NotificationsBell() {
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate from localStorage on mount
     setItems(loadNotifications());
   }, []);
 

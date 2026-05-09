@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { findDocuments, saveDocument } from "@/lib/cloudant";
 import { requireSession } from "@/lib/auth";
 import { glossaryTranslationForLanguage } from "@/lib/dictionaryTranslate";
+import { languageIsArchiveMode } from "@/lib/languageArchive";
 import type { Story } from "@/lib/types";
 
 export async function GET(req: NextRequest) {
@@ -46,7 +47,8 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    const transcript_translation = await glossaryTranslationForLanguage(language_code, transcript);
+    const archive = await languageIsArchiveMode(language_code);
+    const transcript_translation = archive ? "" : await glossaryTranslationForLanguage(language_code, transcript);
     const viewer = await requireSession();
     const story: Story = {
       _id: randomUUID(),

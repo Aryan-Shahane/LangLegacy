@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getSessionFromCookie, viewerCanModerate } from "@/lib/auth";
 import SiteFooter from "@/components/SiteFooter";
 import TopBar from "@/components/TopBar";
@@ -11,6 +12,8 @@ function coerceLanguageHeader(raw: Record<string, unknown> | null): {
   entryCount: number;
   contributorCount: number;
   lastActivityIso: string | null;
+  languageMode: "archive" | "full";
+  translationCoverage: number;
 } {
   if (!raw) {
     return {
@@ -19,18 +22,38 @@ function coerceLanguageHeader(raw: Record<string, unknown> | null): {
       entryCount: 0,
       contributorCount: 0,
       lastActivityIso: null,
+      languageMode: "archive",
+      translationCoverage: 0,
     };
   }
+
+  const entryCountRaw =
+    typeof raw.entry_count === "number"
+      ? raw.entry_count
+      : typeof raw.entry_count === "string"
+        ? Number(raw.entry_count) || 0
+        : 0;
+
+  let translationCoverage =
+    typeof raw.translation_coverage === "number" && Number.isFinite(raw.translation_coverage)
+      ? raw.translation_coverage
+      : 0;
+  if (
+    translationCoverage === 0 &&
+    entryCountRaw > 0 &&
+    typeof raw.translated_entry_count === "number" &&
+    Number.isFinite(raw.translated_entry_count)
+  ) {
+    translationCoverage = raw.translated_entry_count / entryCountRaw;
+  }
+
+  const storedMode = raw.mode === "full" || raw.mode === "archive" ? raw.mode : undefined;
+  const languageMode: "archive" | "full" = storedMode === "full" ? "full" : "archive";
 
   return {
     name: typeof raw.name === "string" ? raw.name : "",
     region: typeof raw.region === "string" ? raw.region : "",
-    entryCount:
-      typeof raw.entry_count === "number"
-        ? raw.entry_count
-        : typeof raw.entry_count === "string"
-          ? Number(raw.entry_count) || 0
-          : 0,
+    entryCount: entryCountRaw,
     contributorCount:
       typeof raw.contributor_count === "number"
         ? raw.contributor_count
@@ -43,6 +66,8 @@ function coerceLanguageHeader(raw: Record<string, unknown> | null): {
         : typeof raw.created_at === "string"
           ? raw.created_at
           : null,
+    languageMode,
+    translationCoverage,
   };
 }
 
@@ -52,6 +77,10 @@ const MOCK_HEADERS: Record<string, Record<string, unknown>> = {
     name: "Māori",
     region: "New Zealand",
     entry_count: 1204,
+    translated_entry_count: 800,
+    translation_coverage: 800 / 1204,
+    mode: "full",
+    moderator_mode_lock: false,
     contributor_count: 42,
     updated_at: new Date().toISOString(),
   },
@@ -60,6 +89,9 @@ const MOCK_HEADERS: Record<string, Record<string, unknown>> = {
     name: "Gamilaraay",
     region: "New South Wales, Australia",
     entry_count: 312,
+    translated_entry_count: 40,
+    translation_coverage: 40 / 312,
+    mode: "archive",
     contributor_count: 15,
     updated_at: new Date().toISOString(),
   },
@@ -68,9 +100,25 @@ const MOCK_HEADERS: Record<string, Record<string, unknown>> = {
     name: "Anishinaabe",
     region: "Great Lakes Region",
     entry_count: 520,
+    translated_entry_count: 400,
+    translation_coverage: 400 / 520,
+    mode: "full",
     contributor_count: 28,
     updated_at: new Date().toISOString(),
-  }
+  },
+  /** Local preview only: always archive-mode with partial coverage — open `/arq` then Learn tab */
+  arq: {
+    _id: "arq",
+    name: "Aruqa Archive (demo)",
+    region: "Fictitious region · UI preview",
+    entry_count: 300,
+    translated_entry_count: 102,
+    translation_coverage: 0.34,
+    mode: "archive",
+    moderator_mode_lock: false,
+    contributor_count: 6,
+    updated_at: new Date().toISOString(),
+  },
 };
 
 export default async function LanguageDictionaryPage({
@@ -82,9 +130,11 @@ export default async function LanguageDictionaryPage({
 }) {
   const { language } = await params;
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
-  
+
   let rawDoc = (await getDocument("languages", language)) as Record<string, unknown> | null;
-  if (!rawDoc && MOCK_HEADERS[language]) {
+  if (language === "arq") {
+    rawDoc = MOCK_HEADERS.arq;
+  } else if (!rawDoc && MOCK_HEADERS[language]) {
     rawDoc = MOCK_HEADERS[language];
   }
 
@@ -93,18 +143,14 @@ export default async function LanguageDictionaryPage({
   const canModerate = viewerCanModerate(viewer);
   const dictionaryTitle = header.name || `${language} Dictionary`;
   const qpTab = resolvedSearchParams?.tab?.toLowerCase();
-  const migrated = qpTab === "learning" ? "learn" : qpTab || "dictionary";
-  const topBarActiveTab =
-    migrated === "learn" ||
-    migrated === "community" ||
-    migrated === "chatrooms" ||
-    migrated === "moderator"
-      ? migrated
-      : "dictionary";
+
+  let topBarActiveTab = "dictionary";
+  if (qpTab === "learn" || qpTab === "learning") topBarActiveTab = "learn";
+  else if (qpTab === "community" || qpTab === "chatrooms") topBarActiveTab = "community";
 
   return (
     <div className="min-h-screen bg-[#FBF9F4] text-[#1B1C19]">
-      <TopBar activeTab={topBarActiveTab} languageCode={language} canModerate={canModerate} />
+      <TopBar activeTab={topBarActiveTab} languageCode={language} />
 
       <section className="px-6 py-12 md:px-12">
         <div className="mx-auto max-w-6xl space-y-4 text-center">
@@ -123,6 +169,13 @@ export default async function LanguageDictionaryPage({
                 </>
               )}
             </p>
+            {canModerate ? (
+              <p className="mt-4">
+                <Link href="/mod" className="text-xs font-semibold uppercase tracking-[0.14em] text-[#1B3022] underline">
+                  Moderator dashboard
+                </Link>
+              </p>
+            ) : null}
             <dl className="mx-auto mt-6 grid max-w-3xl gap-4 rounded-3xl border border-[#C3C8C1]/35 bg-[#F5F3EE] p-6 text-sm text-[#434843] sm:grid-cols-3">
               <div className="text-center">
                 <dt className="text-xs uppercase tracking-[0.3em] text-[#757C76]">Total entries</dt>
@@ -145,7 +198,12 @@ export default async function LanguageDictionaryPage({
 
       <section className="px-6 pb-16 md:px-12">
         <div className="mx-auto max-w-6xl">
-          <LanguageTabsPanel languageCode={language} viewerRole={viewer?.role || "user"} canModerate={canModerate} />
+          <LanguageTabsPanel
+            languageCode={language}
+            viewerRole={viewer?.role || "user"}
+            languageMode={header.languageMode}
+            translationCoverage={header.translationCoverage}
+          />
         </div>
       </section>
 

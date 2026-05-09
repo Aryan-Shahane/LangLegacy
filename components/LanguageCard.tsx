@@ -10,9 +10,16 @@ export default function LanguageCard({ language }: { language: Language }) {
       ? `${language.speaker_count.toLocaleString()} speakers`
       : null;
 
+  const archiveOnly = language.mode === "archive";
+
   return (
     <Link href={`/${language.code}`} className="block">
-      <Card className="h-full space-y-2 p-5 transition-all hover:-translate-y-0.5 hover:border-[#9F4026]/35">
+      <Card className="relative h-full space-y-2 p-5 transition-all hover:-translate-y-0.5 hover:border-[#9F4026]/35">
+        {archiveOnly ? (
+          <span className="absolute bottom-3 left-3 rounded-full bg-[#9AA199] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white shadow-sm">
+            Archive Only
+          </span>
+        ) : null}
         <div>
           <h2 className="font-serif text-2xl text-[#061B0E]">{language.name}</h2>
           <p className="text-[#434843]">{language.region || "Unknown region"}</p>

@@ -1,8 +1,9 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { findDocuments, getDocument, putDocument, saveDocument } from "@/lib/cloudant";
+import { findDocuments, saveDocument } from "@/lib/cloudant";
 import { coerceEntry } from "@/lib/entryCoercion";
 import { getSessionFromCookie } from "@/lib/auth";
+import { recomputeLanguageCoverage } from "@/lib/languageCoverage";
 import { uploadAudio } from "@/lib/cos";
 
 export async function GET(req: NextRequest) {
@@ -125,16 +126,7 @@ export async function POST(req: NextRequest) {
     const saved = await saveDocument("entries", payload);
 
     if (language_code) {
-      const languageDoc = await getDocument("languages", language_code);
-      if (languageDoc && typeof languageDoc._rev === "string") {
-        const currentCount =
-          typeof languageDoc.entry_count === "number" ? languageDoc.entry_count : 0;
-        await putDocument("languages", language_code, {
-          ...languageDoc,
-          entry_count: currentCount + 1,
-          updated_at: new Date().toISOString(),
-        });
-      }
+      await recomputeLanguageCoverage(language_code);
     }
 
     return NextResponse.json({ ok: true, saved, entry: coerceEntry(payload) });

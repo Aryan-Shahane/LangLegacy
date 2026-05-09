@@ -7,7 +7,13 @@ import StoryPlayer from "@/components/storytelling/StoryPlayer";
 import { Card } from "@/components/ui/card";
 import type { Story } from "@/lib/types";
 
-export default function StoryLibrary({ languageCode }: { languageCode: string }) {
+export default function StoryLibrary({
+  languageCode,
+  translationsLocked,
+}: {
+  languageCode: string;
+  translationsLocked: boolean;
+}) {
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +59,7 @@ export default function StoryLibrary({ languageCode }: { languageCode: string })
 
   return (
     <div className="space-y-6">
-      <StoryComposer languageCode={languageCode} onCreated={load} />
+      <StoryComposer languageCode={languageCode} translationsLocked={translationsLocked} onCreated={load} />
       {focused ? (
         <div className="space-y-2">
           <button
@@ -63,7 +69,7 @@ export default function StoryLibrary({ languageCode }: { languageCode: string })
           >
             ← Back to library
           </button>
-          <StoryPlayer story={focused} />
+          <StoryPlayer story={focused} translationsLocked={translationsLocked} />
         </div>
       ) : (
         <>

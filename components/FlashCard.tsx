@@ -9,10 +9,12 @@ import type { Entry } from "@/lib/types";
 export default function FlashCard({
   entry,
   onGot,
+  onAlmost,
   onMissed,
 }: {
   entry: Entry;
   onGot: () => void;
+  onAlmost: () => void;
   onMissed: () => void;
 }) {
   const [flipped, setFlipped] = useState(false);
@@ -73,13 +75,21 @@ export default function FlashCard({
               <Button
                 variant="outline"
                 type="button"
-                className="min-w-[7.5rem] border-rose-400/55 text-rose-800 hover:bg-[#FFDAD6]"
+                className="min-w-[6.75rem] border-rose-400/55 text-rose-800 hover:bg-[#FFDAD6]"
                 onClick={() => onMissed()}
               >
-                Missed it ❌
+                Missed
               </Button>
-              <Button type="button" className="min-w-[7.5rem] bg-[#1B3022] hover:bg-[#0F1F15]" onClick={() => onGot()}>
-                Got it ✅
+              <Button
+                variant="outline"
+                type="button"
+                className="min-w-[6.75rem] border-amber-300/75 text-amber-900 hover:bg-amber-50"
+                onClick={() => onAlmost()}
+              >
+                Almost
+              </Button>
+              <Button type="button" className="min-w-[6.75rem] bg-[#1B3022] hover:bg-[#0F1F15]" onClick={() => onGot()}>
+                Got it
               </Button>
             </div>
           </div>
@@ -92,7 +102,7 @@ export default function FlashCard({
         </p>
       ) : (
         <p className="text-center text-[11px] text-[#737973]">
-          Mark honestly — missed cards shuffle back into the deck until you nail them all.
+          Mark honestly — missed cards shuffle back into the deck; “Almost” slips this card slightly later in the queue.
         </p>
       )}
     </div>

@@ -19,6 +19,7 @@ type LearnState = {
 type Action =
   | { type: "reset_deck"; entries: Entry[] }
   | { type: "got" }
+  | { type: "almost" }
   | { type: "missed" };
 
 function reducer(state: LearnState, action: Action): LearnState {
@@ -42,6 +43,19 @@ function reducer(state: LearnState, action: Action): LearnState {
         correct: nextCorrect,
         queue: rest,
         completed: rest.length === 0 ? true : state.completed,
+      };
+    }
+    case "almost": {
+      const [first, ...rest] = state.queue;
+      if (!first) return state;
+      const nextRated = state.rated + 1;
+      const nextQueue =
+        rest.length === 0 ? [first] : rest.length >= 2 ? [rest[0], first, rest[1], ...rest.slice(2)] : [rest[0], first];
+      return {
+        ...state,
+        rated: nextRated,
+        queue: nextQueue,
+        completed: nextQueue.length === 0 ? true : state.completed,
       };
     }
     case "missed": {
@@ -82,23 +96,20 @@ export default function LearnSession({ languageCode }: { languageCode: string })
     setProgress((await res.json()) as LearningProgress);
   }, [languageCode]);
 
-  const shuffle = useCallback(<T,>(xs: T[]) => [...xs].sort(() => Math.random() - 0.5), []);
-
   const buildDeck = useCallback(async () => {
     const res = await fetch(
-      `/api/entries?language_code=${encodeURIComponent(languageCode)}&limit=250&offset=0`,
+      `/api/learning/cards?language_code=${encodeURIComponent(languageCode)}&n=24`,
       { cache: "no-store" }
     );
     if (!res.ok) {
       const j = (await res.json().catch(() => ({}))) as { error?: string };
-      throw new Error(j.error || "Could not load dictionary entries.");
+      throw new Error(j.error || "Could not load learning cards.");
     }
-    const all = shuffle((await res.json()) as Entry[]);
-    const live = all.filter((e) => e.status !== "removed");
-    if (live.length === 0) throw new Error("No dictionary entries to study yet.");
+    const live = (await res.json()) as Entry[];
     sessionPostedRef.current = false;
+    if (live.length === 0) throw new Error("No dictionary entries with translations yet.");
     dispatch({ type: "reset_deck", entries: live });
-  }, [languageCode, shuffle]);
+  }, [languageCode]);
 
   useEffect(() => {
     let m = true;
@@ -190,6 +201,7 @@ export default function LearnSession({ languageCode }: { languageCode: string })
           key={activeCard._id}
           entry={activeCard}
           onGot={() => dispatch({ type: "got" })}
+          onAlmost={() => dispatch({ type: "almost" })}
           onMissed={() => dispatch({ type: "missed" })}
         />
       </>

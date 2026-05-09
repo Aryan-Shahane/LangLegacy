@@ -97,7 +97,7 @@ export default function ReportModal(props: UnifiedProps | LegacyProps) {
           setOpen((v) => !v);
         }}
       >
-        {compact ? "⚑ Flag" : "Report"}
+        {compact ? "🚩 Flag" : "Report"}
       </Button>
       {open ? (
         <Card className="absolute right-0 z-20 mt-2 w-[min(100vw-2rem,20rem)] space-y-2 p-3 text-xs shadow-xl">

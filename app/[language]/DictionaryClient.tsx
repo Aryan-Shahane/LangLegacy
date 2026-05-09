@@ -120,7 +120,7 @@ export default function DictionaryClient({ languageCode }: { languageCode: strin
       {!loadingInitial && entries.length > 0 ? (
         <div className="grid gap-3">
           {entries.map((entry) => (
-            <DictionaryEntry key={entry._id} entry={entry} />
+            <DictionaryEntry key={entry._id} entry={entry} onTranslationSaved={resetAndLoadFirst} />
           ))}
         </div>
       ) : null}

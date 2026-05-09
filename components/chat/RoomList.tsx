@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import ChatRoom from "@/components/ChatRoom";
+import ChatRoom from "@/components/chat/ChatRoom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,6 @@ import type { Room, UserRole } from "@/lib/types";
 export default function RoomList({
   rooms,
   languageCode,
-  viewerRole,
   onCreateRoom,
 }: {
   rooms: Room[];
@@ -22,17 +21,15 @@ export default function RoomList({
   const router = useRouter();
   const searchParams = useSearchParams();
   const roomParam = searchParams.get("room");
-  
+
   const [activeId, setActiveId] = useState<string>(roomParam || rooms[0]?._id || "");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [busyCreate, setBusyCreate] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-  
-  // Mobile drawer state
+
   const [showList, setShowList] = useState(!roomParam);
 
-  // General room pinned to top
   const sortedRooms = useMemo(() => {
     return [...rooms].sort((a, b) => {
       if (a.name.toLowerCase() === "general") return -1;
@@ -43,12 +40,14 @@ export default function RoomList({
 
   useEffect(() => {
     if (!activeId && sortedRooms[0]?._id) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- derive default circle from SSR list
       setActiveId(sortedRooms[0]._id);
     }
   }, [sortedRooms, activeId]);
 
   useEffect(() => {
     if (roomParam && roomParam !== activeId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- keep selection in sync with URL ?room=
       setActiveId(roomParam);
       setShowList(false);
     }
@@ -57,10 +56,10 @@ export default function RoomList({
   const selectRoom = (id: string) => {
     setActiveId(id);
     setShowList(false);
-    
-    // Update URL
+
     const params = new URLSearchParams(searchParams.toString());
-    params.set("tab", "chatrooms");
+    params.set("tab", "community");
+    params.set("section", "chat");
     params.set("room", id);
     router.push(`/${languageCode}?${params.toString()}`);
   };
@@ -77,8 +76,6 @@ export default function RoomList({
   return (
     <div className="rounded-2xl bg-gradient-to-b from-[#CC8E7A] via-[#8A6F88] to-[#F0A482] p-5">
       <div className="grid gap-4 xl:grid-cols-[0.44fr_0.56fr]">
-        
-        {/* Room List Column */}
         <section className={`space-y-3 ${!showList ? "hidden xl:block" : "block"}`}>
           <div className="flex items-end justify-between">
             <h2 className="font-serif text-5xl leading-tight text-[#1F1C1C]">Discover Circles</h2>
@@ -87,7 +84,7 @@ export default function RoomList({
             </button>
           </div>
 
-          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+          <div className="max-h-[600px] space-y-3 overflow-y-auto pr-2">
             {sortedRooms.map((room) => {
               const activeNow = room._id === active?._id;
               return (
@@ -98,7 +95,9 @@ export default function RoomList({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <h3 className="font-serif text-[40px] leading-tight text-[#1F1C1C]">{room.name}</h3>
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${activeNow ? "bg-[#D0E9D4] text-[#2E5E46]" : "bg-[#F0EEE9] text-[#676F69]"}`}>
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-medium ${activeNow ? "bg-[#D0E9D4] text-[#2E5E46]" : "bg-[#F0EEE9] text-[#676F69]"}`}
+                    >
                       {activeNow ? "Active Now" : `${memberCount(room._id, 4) % 25} Online`}
                     </span>
                   </div>
@@ -119,7 +118,7 @@ export default function RoomList({
               </Card>
             ) : null}
           </div>
-          
+
           <div className="mt-4">
             <Card className="space-y-3 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#737973]">Create Circle</p>
@@ -153,11 +152,11 @@ export default function RoomList({
           </div>
         </section>
 
-        {/* Chat Window Column */}
         <section className={`${showList ? "hidden xl:block" : "block"}`}>
           {!showList && (
-            <button 
-              className="mb-4 text-sm font-semibold text-[#633D3A] xl:hidden flex items-center gap-2"
+            <button
+              type="button"
+              className="mb-4 flex items-center gap-2 text-sm font-semibold text-[#633D3A] xl:hidden"
               onClick={() => setShowList(true)}
             >
               <span>←</span> Back to Circles

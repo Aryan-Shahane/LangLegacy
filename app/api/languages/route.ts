@@ -5,6 +5,12 @@ import type { Language } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 function coerceLanguage(raw: Record<string, unknown>): Language {
+  const storedMode =
+    raw.mode === "full" || raw.mode === "archive" ? (raw.mode as "full" | "archive") : undefined;
+  const coverage =
+    typeof raw.translation_coverage === "number" ? raw.translation_coverage : undefined;
+  const mode: "archive" | "full" = storedMode ?? "archive";
+
   return {
     _id: String(raw._id),
     type: raw.type === "language" ? "language" : undefined,
@@ -15,12 +21,35 @@ function coerceLanguage(raw: Record<string, unknown>): Language {
     native_script: typeof raw.native_script === "string" ? raw.native_script : undefined,
     speaker_count: typeof raw.speaker_count === "number" ? raw.speaker_count : null,
     entry_count: typeof raw.entry_count === "number" ? raw.entry_count : 0,
+    translated_entry_count: typeof raw.translated_entry_count === "number" ? raw.translated_entry_count : undefined,
+    translation_coverage: coverage,
+    mode,
+    moderator_mode_lock: raw.moderator_mode_lock === true,
     contributor_count:
       typeof raw.contributor_count === "number" ? raw.contributor_count : 0,
     created_at: typeof raw.created_at === "string" ? raw.created_at : new Date(0).toISOString(),
     updated_at: typeof raw.updated_at === "string" ? raw.updated_at : null,
   };
 }
+
+/** Merged into GET when not in Cloudant; use `/arq` + Learn tab to preview archive lock UI. */
+export const ARCHIVE_DEMO_LANGUAGE: Language = {
+  _id: "arq",
+  type: "language",
+  name: "Aruqa Archive (demo)",
+  code: "arq",
+  region: "Demo · fictional",
+  description: "Open /arq → Learn tab to see archive lock + coverage bar.",
+  native_script: "Latin",
+  speaker_count: null,
+  entry_count: 300,
+  translated_entry_count: 102,
+  translation_coverage: 0.34,
+  mode: "archive",
+  contributor_count: 6,
+  created_at: "2026-05-08T00:00:00Z",
+  updated_at: "2026-05-09T00:00:00Z",
+};
 
 const FALLBACK_LANGUAGES: Language[] = [
   {
@@ -33,6 +62,9 @@ const FALLBACK_LANGUAGES: Language[] = [
     native_script: "Latin",
     speaker_count: null,
     entry_count: 0,
+    translated_entry_count: 0,
+    translation_coverage: 0,
+    mode: "archive",
     contributor_count: 0,
     created_at: "2026-05-08T00:00:00Z",
     updated_at: null,
@@ -47,6 +79,9 @@ const FALLBACK_LANGUAGES: Language[] = [
     native_script: "Latin",
     speaker_count: null,
     entry_count: 0,
+    translated_entry_count: 0,
+    translation_coverage: 0,
+    mode: "archive",
     contributor_count: 0,
     created_at: "2026-05-08T00:00:00Z",
     updated_at: null,
@@ -61,16 +96,24 @@ const FALLBACK_LANGUAGES: Language[] = [
     native_script: "Latin",
     speaker_count: null,
     entry_count: 0,
+    translated_entry_count: 0,
+    translation_coverage: 0,
+    mode: "archive",
     contributor_count: 0,
     created_at: "2026-05-08T00:00:00Z",
     updated_at: null,
   },
+  ARCHIVE_DEMO_LANGUAGE,
 ];
 
 export async function GET() {
   try {
     const raw = (await getAllDocuments("languages")) as Record<string, unknown>[];
-    const languages = raw.map(coerceLanguage).sort((a, b) => a.name.localeCompare(b.name));
+    const languages = raw.map(coerceLanguage);
+    if (!languages.some((l) => l.code === ARCHIVE_DEMO_LANGUAGE.code)) {
+      languages.push(ARCHIVE_DEMO_LANGUAGE);
+    }
+    languages.sort((a, b) => a.name.localeCompare(b.name));
     return NextResponse.json(languages);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch languages";
@@ -121,6 +164,10 @@ export async function POST(req: NextRequest) {
       native_script: body.native_script?.trim() || null,
       speaker_count: null,
       entry_count: 0,
+      translated_entry_count: 0,
+      translation_coverage: 0,
+      mode: "archive",
+      moderator_mode_lock: false,
       contributor_count: 0,
       created_at: now,
       updated_at: null,

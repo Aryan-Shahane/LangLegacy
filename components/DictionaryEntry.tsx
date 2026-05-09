@@ -1,11 +1,26 @@
 "use client";
 
+import { useState } from "react";
 import ReportModal from "@/components/ReportModal";
 import AudioPlayer from "@/components/AudioPlayer";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { entryHasMeaningfulTranslation } from "@/lib/entryTranslation";
 import type { Entry } from "@/lib/types";
 
-export default function DictionaryEntry({ entry }: { entry: Entry }) {
+export default function DictionaryEntry({
+  entry,
+  onTranslationSaved,
+}: {
+  entry: Entry;
+  onTranslationSaved?: () => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [patchError, setPatchError] = useState<string | null>(null);
+
   const created = entry.created_at
     ? new Date(entry.created_at).toLocaleString(undefined, {
         dateStyle: "medium",
@@ -17,6 +32,33 @@ export default function DictionaryEntry({ entry }: { entry: Entry }) {
   const legacyGloss = [entry.part_of_speech, entry.phonetic].filter(Boolean).join(" · ").trim();
 
   const contributorLabel = entry.contributor_name ? `Contributed by ${entry.contributor_name}` : "Community";
+
+  const needsTranslation = !entryHasMeaningfulTranslation(entry);
+
+  const submitTranslation = async () => {
+    const value = draft.trim();
+    if (!value) return;
+    setBusy(true);
+    setPatchError(null);
+    try {
+      const res = await fetch(`/api/entries/${encodeURIComponent(entry._id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ translation: value }),
+      });
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(payload.error || `Could not save (${res.status})`);
+      }
+      setAdding(false);
+      setDraft("");
+      onTranslationSaved?.();
+    } catch (e) {
+      setPatchError(e instanceof Error ? e.message : "Could not save translation.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <article className="panel space-y-3">
@@ -38,6 +80,49 @@ export default function DictionaryEntry({ entry }: { entry: Entry }) {
           {entry.example_sentence}
           {entry.example_translation ? ` (${entry.example_translation})` : ""}
         </p>
+      ) : null}
+
+      {needsTranslation ? (
+        <div className="space-y-2 rounded-xl border border-dashed border-[#C3C8C1]/55 bg-[#FAF9F6] px-3 py-2">
+          {!adding ? (
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className="text-sm font-semibold text-[#1B3022] underline underline-offset-2 hover:text-[#9F4026]"
+            >
+              Add translation +
+            </button>
+          ) : (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Input
+                value={draft}
+                disabled={busy}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder="English translation"
+                className="sm:max-w-md"
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" size="sm" disabled={busy || !draft.trim()} onClick={() => void submitTranslation()}>
+                  {busy ? "Saving…" : "Save"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => {
+                    setAdding(false);
+                    setDraft("");
+                    setPatchError(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+          {patchError ? <p className="text-xs text-rose-700">{patchError}</p> : null}
+        </div>
       ) : null}
 
       <div className="flex flex-wrap items-center gap-3">

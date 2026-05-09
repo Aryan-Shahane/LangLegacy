@@ -9,6 +9,13 @@ export type Language = {
   /** Approximate speakers (optional enrichment for cards). */
   speaker_count?: number | null;
   entry_count: number;
+  translated_entry_count?: number;
+  /** 0–1 fraction of entries with usable English translations. */
+  translation_coverage?: number;
+  /** `archive`: Learn locked until coverage thresholds; `full`: normal experience. */
+  mode?: "archive" | "full";
+  /** When true, PATCH from moderators pinned `mode` until cleared. */
+  moderator_mode_lock?: boolean;
   contributor_count?: number;
   created_at: string;
   updated_at?: string | null;

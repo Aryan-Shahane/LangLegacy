@@ -5,7 +5,14 @@ import PoemCard from "@/components/poetry/PoemCard";
 import PoemComposer from "@/components/poetry/PoemComposer";
 import type { Language, Poem } from "@/lib/types";
 
-export default function PoetryGallery({ languageCode }: { languageCode: string }) {
+export default function PoetryGallery({
+  languageCode,
+  translationsLocked,
+}: {
+  languageCode: string;
+  /** Archive mode — hide dictionary English gloss under poems. */
+  translationsLocked: boolean;
+}) {
   const [poems, setPoems] = useState<Poem[]>([]);
   const [languages, setLanguages] = useState<Language[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,6 +81,7 @@ export default function PoetryGallery({ languageCode }: { languageCode: string }
         <PoemComposer
           languageCode={languageCode}
           languageDisplayName={languageDisplayName}
+          translationsLocked={translationsLocked}
           onCreated={load}
         />
         {loading ? <p className="text-sm text-[#434843]">Loading poetry…</p> : null}
@@ -85,6 +93,7 @@ export default function PoetryGallery({ languageCode }: { languageCode: string }
           poem={p}
           languageCode={languageCode}
           languageDisplayName={languageDisplayName}
+          translationsLocked={translationsLocked}
           onReact={(emoji) => reactFor(p._id, emoji)}
         />
       ))}

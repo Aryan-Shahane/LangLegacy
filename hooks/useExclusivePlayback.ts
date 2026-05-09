@@ -34,6 +34,7 @@ export function useExclusivePlayback(audioUrl: string | null | undefined) {
       internalRef.current = null;
       if (sharedPlaying === el) sharedPlaying = null;
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- URL changes invalidate prior audio element
     setIsPlaying(false);
   }, [url]);
 

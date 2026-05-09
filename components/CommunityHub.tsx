@@ -1,16 +1,19 @@
 "use client";
 
+import CommunityChatPanel from "@/components/CommunityChatPanel";
 import ForumPanel from "@/components/forum/ForumPanel";
 import PoetryGallery from "@/components/poetry/PoetryGallery";
 import StoryLibrary from "@/components/storytelling/StoryLibrary";
 import { cn } from "@/lib/utils";
+import type { UserRole } from "@/lib/types";
 
-export type HubSection = "forum" | "poetry" | "storytelling";
+export type HubSection = "forum" | "poetry" | "storytelling" | "chat";
 
 const NAV: Array<{ key: HubSection; label: string }> = [
   { key: "forum", label: "Forum" },
   { key: "poetry", label: "Poetry" },
   { key: "storytelling", label: "Storytelling" },
+  { key: "chat", label: "Chat" },
 ];
 
 /** `queryString` is the raw `window.location.search` segment (leading `?` optional) preserved for SSR-safe links from the tab shell. */
@@ -18,15 +21,19 @@ export default function CommunityHub({
   languageCode,
   section: sectionProp,
   queryString,
+  viewerRole,
+  languageMode,
 }: {
   languageCode: string;
   section: string | null;
   /** e.g. `tab=community&section=forum` — passed from server so SSR links remain consistent. */
   queryString?: string;
+  viewerRole: UserRole;
+  languageMode: "archive" | "full";
 }) {
   const raw = (sectionProp || "forum").toLowerCase();
   const section: HubSection =
-    raw === "poetry" || raw === "storytelling" || raw === "forum" ? (raw as HubSection) : "forum";
+    raw === "poetry" || raw === "storytelling" || raw === "forum" || raw === "chat" ? raw : "forum";
 
   const baseSearch = queryString?.startsWith("?") ? queryString.slice(1) : queryString || "";
 
@@ -55,8 +62,13 @@ export default function CommunityHub({
       </nav>
 
       {section === "forum" ? <ForumPanel languageCode={languageCode} /> : null}
-      {section === "poetry" ? <PoetryGallery languageCode={languageCode} /> : null}
-      {section === "storytelling" ? <StoryLibrary languageCode={languageCode} /> : null}
+      {section === "poetry" ? (
+        <PoetryGallery languageCode={languageCode} translationsLocked={languageMode === "archive"} />
+      ) : null}
+      {section === "storytelling" ? (
+        <StoryLibrary languageCode={languageCode} translationsLocked={languageMode === "archive"} />
+      ) : null}
+      {section === "chat" ? <CommunityChatPanel languageCode={languageCode} viewerRole={viewerRole} /> : null}
     </div>
   );
 }

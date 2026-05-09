@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import SiteFooter from "@/components/SiteFooter";
 import TopBar from "@/components/TopBar";
-import { Button } from "@/components/ui/button";
 import mauiFishImage from "@/Screenshot 2026-05-09 at 3.22.38 AM.png";
 import { Play, Mic, FileText, CheckCircle2, ShieldCheck, BookOpen, Volume2 } from "lucide-react";
 
@@ -71,7 +70,7 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           {/* Maori */}
           <Link href="/mi?tab=dictionary" className="block">
             <div className="overflow-hidden rounded-2xl bg-white shadow-sm transition-shadow hover:shadow-md border border-[#E3DFD6]/60 h-full">
@@ -130,6 +129,32 @@ export default function HomePage() {
                 </p>
                 <div className="flex items-center gap-2 text-xs font-semibold text-[#8A3620]">
                   <Volume2 className="h-4 w-4" /> 50k Speakers
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          {/* Archive-mode UI preview (demo) */}
+          <Link href="/arq" className="block">
+            <div className="overflow-hidden rounded-2xl bg-white shadow-sm transition-shadow hover:shadow-md border border-[#E3DFD6]/60 h-full">
+              <div className="relative h-48 w-full opacity-90">
+                <span className="absolute bottom-3 left-3 z-10 rounded-full bg-[#9AA199] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white shadow-sm">
+                  Archive Only
+                </span>
+                <Image src="/dialect-maori.png" alt="Archive demo placeholder landscape" fill className="object-cover" />
+              </div>
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-serif text-2xl text-[#1B3022]">Aruqa Archive (demo)</h3>
+                  <span className="rounded-full bg-[#E8E8E6] px-3 py-1 text-[10px] font-bold tracking-wider text-[#5C5C5A]">
+                    PREVIEW
+                  </span>
+                </div>
+                <p className="mb-6 text-sm leading-relaxed text-[#5A665F]">
+                  Sample language in archive mode: locked Learn tab with a coverage bar. Code <span className="font-mono font-semibold text-[#1B3022]">arq</span>.
+                </p>
+                <div className="flex items-center gap-2 text-xs font-semibold text-[#8A3620]">
+                  <BookOpen className="h-4 w-4" /> Try Learn tab — shows lock UI
                 </div>
               </div>
             </div>

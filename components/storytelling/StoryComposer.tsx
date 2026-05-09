@@ -47,9 +47,11 @@ async function inferDurationSeconds(file: File): Promise<number> {
 
 export default function StoryComposer({
   languageCode,
+  translationsLocked,
   onCreated,
 }: {
   languageCode: string;
+  translationsLocked: boolean;
   onCreated: () => Promise<void>;
 }) {
   const [title, setTitle] = useState("");
@@ -258,8 +260,10 @@ export default function StoryComposer({
     <Card className="space-y-3 bg-[#F5F3EE] p-5">
       <p className="text-xs uppercase tracking-[0.2em] text-[#737973]">Add a storytelling recording</p>
       <p className="text-[11px] leading-relaxed text-[#757C76]">
-        Record in your browser here, or upload a file. Audio is transcribed with Whisper and the English panel comes from your
-        archive dictionary.
+        Record in your browser here, or upload a file. Audio is transcribed with Whisper.
+        {translationsLocked
+          ? " Dictionary English glosses for stories stay locked until this language reaches full archive mode."
+          : " The English panel comes from your archive dictionary."}
       </p>
       <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} className="bg-[#FBF9F4]" />
       <Textarea

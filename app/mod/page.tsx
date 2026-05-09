@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { findDocuments } from "@/lib/cloudant";
+import LanguagePanel from "@/components/moderator/LanguagePanel";
 import ModStats from "@/components/ModStats";
 import type { Report } from "@/lib/types";
 
@@ -27,6 +28,8 @@ export default async function ModOverviewPage() {
       <Link href="/mod/reports" className="inline-block rounded bg-cyan-700 px-3 py-2 text-sm hover:bg-cyan-600">
         Open report queue
       </Link>
+
+      <LanguagePanel />
     </section>
   );
 }
