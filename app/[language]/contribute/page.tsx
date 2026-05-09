@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import CommunityRecordingFlow from "@/components/CommunityRecordingFlow";
+import TopBar from "@/components/TopBar";
 import { getSessionFromCookie } from "@/lib/auth";
 import { getDocument } from "@/lib/cloudant";
 
@@ -15,7 +16,9 @@ export default async function ContributePage({ params }: { params: Promise<{ lan
   const languageName = typeof languageDoc?.name === "string" ? languageDoc.name : language;
 
   return (
-    <section className="space-y-6">
+    <>
+      <TopBar activeTab="dictionary" languageCode={language} />
+      <section className="min-h-screen space-y-6 bg-slate-950 px-6 py-8 text-slate-100">
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-cyan-500/90">Contribution</p>
         <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-500">
@@ -35,6 +38,7 @@ export default async function ContributePage({ params }: { params: Promise<{ lan
       </div>
 
       <CommunityRecordingFlow languageCode={language} languageName={languageName} />
-    </section>
+      </section>
+    </>
   );
 }

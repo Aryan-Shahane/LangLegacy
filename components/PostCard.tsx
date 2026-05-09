@@ -3,10 +3,11 @@
 import { useMemo, useState } from "react";
 import ReactionBar from "@/components/ReactionBar";
 import ReportModal from "@/components/ReportModal";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import type { Post } from "@/lib/types";
+import type { Post, ReportReason } from "@/lib/types";
 
 export default function PostCard({
   post,
@@ -17,8 +18,8 @@ export default function PostCard({
 }: {
   post: Post;
   replies?: Post[];
-  onReact: (emoji: string) => Promise<void>;
-  onReport: (payload: { reason: "inaccurate" | "offensive" | "spam" | "other"; details: string }) => Promise<void>;
+  onReact: (postId: string, emoji: string) => Promise<void>;
+  onReport: (postId: string, payload: { reason: ReportReason; details: string }) => Promise<void>;
   onReply?: (payload: { parentPostId: string; replyToAuthor: string; body: string }) => Promise<void>;
 }) {
   const when = new Date(post.created_at).toLocaleString();
@@ -26,6 +27,16 @@ export default function PostCard({
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reportedIds, setReportedIds] = useState<Record<string, boolean>>({});
+
+  const markReported = (id: string) => {
+    setReportedIds((prev) => ({ ...prev, [id]: true }));
+  };
+
+  const reportHandler = async (targetId: string, payload: { reason: ReportReason; details: string }) => {
+    await onReport(targetId, payload);
+    markReported(targetId);
+  };
 
   const replyCount = replies?.length || 0;
   const replyLabel = useMemo(() => (replyCount === 1 ? "1 reply" : `${replyCount} replies`), [replyCount]);
@@ -37,7 +48,11 @@ export default function PostCard({
           <p className="font-serif text-2xl leading-tight text-[#061B0E]">{post.author_name}</p>
           <p className="text-xs uppercase tracking-[0.12em] text-[#737973]">{when}</p>
         </div>
-        <ReportModal compact onSubmit={onReport} />
+        {reportedIds[post._id] ? (
+          <Badge className="shrink-0 border-[#8C7851]/30 bg-[#F0EEE9] text-[#434843]">Reported</Badge>
+        ) : (
+          <ReportModal compact onSubmit={(p) => reportHandler(post._id, p)} />
+        )}
       </div>
       <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-[#1B1C19]">
         {post.reply_to_author ? (
@@ -47,7 +62,7 @@ export default function PostCard({
         ) : null}
         {post.body}
       </p>
-      <ReactionBar reactions={post.reactions || {}} onReact={onReact} />
+      <ReactionBar reactions={post.reactions || {}} onReact={(emoji) => onReact(post._id, emoji)} />
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#C3C8C1]/35 pt-3">
         <button
@@ -106,10 +121,14 @@ export default function PostCard({
                     {new Date(reply.created_at).toLocaleString()}
                   </p>
                 </div>
-                <ReportModal compact onSubmit={onReport} />
+                {reportedIds[reply._id] ? (
+                  <Badge className="shrink-0 border-[#8C7851]/30 bg-[#F0EEE9] text-[#434843]">Reported</Badge>
+                ) : (
+                  <ReportModal compact onSubmit={(p) => reportHandler(reply._id, p)} />
+                )}
               </div>
               <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-[#1B1C19]">{reply.body}</p>
-              <ReactionBar reactions={reply.reactions || {}} onReact={onReact} />
+              <ReactionBar reactions={reply.reactions || {}} onReact={(emoji) => onReact(reply._id, emoji)} />
             </Card>
           ))}
         </div>

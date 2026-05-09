@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import TopBar from "@/components/TopBar";
 
 const SAMPLE_LANGUAGE_DOC = `{
   "_id": "xyz",
@@ -19,7 +20,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     : "https://console.cloudinary.com/";
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-slate-950 text-slate-100">
+      <TopBar activeTab="dictionary" />
+      <div className="space-y-6 px-6 pb-12 pt-2">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-900/50 bg-slate-900/70 px-4 py-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-amber-300">Administrator</p>
@@ -76,6 +79,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       </details>
 
       {children}
+      </div>
     </div>
   );
 }

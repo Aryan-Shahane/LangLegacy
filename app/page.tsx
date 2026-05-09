@@ -1,10 +1,15 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
+import AddLanguageModal from "@/components/AddLanguageModal";
 import SiteFooter from "@/components/SiteFooter";
 import TopBar from "@/components/TopBar";
-import LanguageExplorer from "@/components/LanguageExplorer";
-import type { Entry, Language } from "@/lib/types";
+import LanguageCard from "@/components/LanguageCard";
+import SearchBar from "@/components/SearchBar";
+import { Button } from "@/components/ui/button";
+import type { Language } from "@/lib/types";
+import mauiFishImage from "@/Screenshot 2026-05-09 at 3.22.38 AM.png";
 
 const fallbackLanguages: Language[] = [
   {
@@ -45,16 +50,59 @@ const fallbackLanguages: Language[] = [
   },
 ];
 
-type HomeTab = "home";
+function DictionaryPanel({
+  loading,
+  filteredLanguages,
+  error,
+  onAddLanguage,
+}: {
+  loading: boolean;
+  filteredLanguages: Language[];
+  error: string | null;
+  onAddLanguage: () => void;
+}) {
+  return (
+    <section id="dictionary" className="scroll-mt-28 px-6 py-14 md:px-12">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="font-serif text-4xl text-[#1F2E27]">Living Archives</h2>
+            <p className="mt-1 text-sm text-[#5A665F]">Explore our growing collection of ancestral voices.</p>
+          </div>
+          <Button
+            type="button"
+            onClick={onAddLanguage}
+            variant="pill"
+            className="rounded-full bg-[#1B3022] px-6 text-[#FBF9F4] hover:bg-[#061B0E]"
+          >
+            + Add Your Language
+          </Button>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {loading ? <p className="text-sm text-[#5A665F]">Loading archives...</p> : null}
+          {!loading &&
+            filteredLanguages.map((language) => (
+              <div key={language._id} className="rounded-2xl bg-[#F5F3EE] p-1">
+                <LanguageCard language={language} />
+              </div>
+            ))}
+        </div>
+        {!loading && !filteredLanguages.length && !error ? (
+          <p className="mt-5 text-sm text-[#5A665F]">No language archives match this search.</p>
+        ) : null}
+        {error ? <p className="mt-5 text-sm text-[#A44927]">{error}</p> : null}
+        <p className="mt-4 text-sm text-[#5A665F]">View all archives</p>
+      </div>
+    </section>
+  );
+}
 
 export default function HomePage() {
   const [languages, setLanguages] = useState<Language[]>([]);
-  const [recentEntries, setRecentEntries] = useState<Entry[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [recentLoading, setRecentLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const activeTab: HomeTab = "home";
+  const [addLanguageOpen, setAddLanguageOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -62,8 +110,7 @@ export default function HomePage() {
       try {
         const response = await fetch("/api/languages", { cache: "no-store" });
         if (!response.ok) {
-          const payload = (await response.json()) as { error?: string };
-          throw new Error(payload.error || "Unable to fetch language archives.");
+          throw new Error("Unable to fetch language archives.");
         }
         const payload = (await response.json()) as Language[];
         if (mounted) {
@@ -81,26 +128,7 @@ export default function HomePage() {
         }
       }
     };
-
-    const loadContributions = async () => {
-      try {
-        const response = await fetch("/api/contributions?limit=6", { cache: "no-store" });
-        if (!response.ok) {
-          throw new Error("Unable to fetch contributions");
-        }
-        const payload = (await response.json()) as Entry[];
-        if (mounted) {
-          setRecentEntries(payload);
-        }
-      } catch {
-        if (mounted) setRecentEntries([]);
-      } finally {
-        if (mounted) setRecentLoading(false);
-      }
-    };
-
     void loadLanguages();
-    void loadContributions();
     return () => {
       mounted = false;
     };
@@ -118,28 +146,59 @@ export default function HomePage() {
     });
   }, [languages, query]);
 
-  const totalEntriesAcrossArchives = useMemo(() => languages.reduce((n, lang) => n + (lang.entry_count || 0), 0), [languages]);
-  const totalContributorTally = useMemo(
-    () => languages.reduce((n, lang) => n + (lang.contributor_count || 0), 0),
-    [languages]
-  );
-
   return (
     <div className="bg-[#FBF9F4] text-[#1B1C19]">
-      <TopBar activeTab={activeTab} />
+      <AddLanguageModal open={addLanguageOpen} onClose={() => setAddLanguageOpen(false)} />
 
-      <LanguageExplorer
-        languages={languages}
-        filteredLanguages={filteredLanguages}
+      <TopBar activeTab="dictionary" />
+
+      <section className="bg-[#1B3022] px-6 pb-20 pt-10 text-[#F4EEE5] md:px-12">
+        <div className="mx-auto max-w-6xl">
+          <div className="text-center">
+            <p className="text-[11px] uppercase tracking-[0.35em] text-[#D9CDC0]">The Digital Hearth</p>
+            <h1 className="mt-4 font-serif text-5xl leading-tight md:text-6xl">
+              Preserve the Words That
+              <br />
+              <span className="font-normal italic">Shape a Culture</span>
+            </h1>
+          </div>
+          <div className="mx-auto mt-10 max-w-2xl rounded-2xl bg-[#FBF9F4] p-2">
+            <SearchBar query={query} onQueryChange={setQuery} totalLoaded={filteredLanguages.length} hasMore={false} />
+          </div>
+        </div>
+      </section>
+
+      <DictionaryPanel
         loading={loading}
+        filteredLanguages={filteredLanguages}
         error={error}
-        query={query}
-        onQueryChange={setQuery}
-        recentEntries={recentEntries}
-        recentLoading={recentLoading}
-        totalEntriesAcrossArchives={totalEntriesAcrossArchives}
-        totalContributorTally={totalContributorTally}
+        onAddLanguage={() => setAddLanguageOpen(true)}
       />
+
+      <section className="bg-[#1B3022] px-6 py-14 text-[#F4EEE5] md:px-12">
+        <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-2">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.3em] text-[#C8BBAD]">Voice of the Ancestors</p>
+            <h3 className="mt-4 font-serif text-4xl">The Legend of Maui&apos;s Fish</h3>
+            <p className="mt-4 max-w-xl text-sm leading-relaxed text-[#DDD3C8]">
+              Listen to an oral storytelling archive from the Pacific, preserved and shared by the community. Each contribution helps keep
+              language memory alive for future generations.
+            </p>
+            <div className="mt-8 rounded-xl bg-[#24463A] p-6">
+              <div className="h-2 rounded-full bg-[#C4622D]/30">
+                <div className="h-2 w-1/2 rounded-full bg-[#C4622D]" />
+              </div>
+              <div className="mt-3 flex justify-between text-xs text-[#C8BBAD]">
+                <span>1:34</span>
+                <span>4:58</span>
+              </div>
+            </div>
+          </div>
+          <div className="relative h-[360px] overflow-hidden rounded-2xl">
+            <Image src={mauiFishImage} alt="Legend of Maui's Fish artwork" fill className="object-cover" />
+          </div>
+        </div>
+      </section>
 
       <SiteFooter />
     </div>

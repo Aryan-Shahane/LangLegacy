@@ -76,20 +76,24 @@ export default function CommunityFeed({ languageCode }: { languageCode: string }
           key={post._id}
           post={post}
           replies={(repliesByParent[post._id] || []).slice().sort((a, b) => a.created_at.localeCompare(b.created_at))}
-          onReact={async (emoji) => {
-            await fetch(`/api/posts/${post._id}/react`, {
+          onReact={async (targetPostId, emoji) => {
+            await fetch(`/api/posts/${targetPostId}/react`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ emoji }),
             });
             await loadPosts();
           }}
-          onReport={async (payload) => {
-            await fetch(`/api/posts/${post._id}/report`, {
+          onReport={async (postIdForReport, payload) => {
+            const res = await fetch(`/api/posts/${postIdForReport}/report`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ ...payload, language_code: languageCode }),
             });
+            if (!res.ok) {
+              const errJson = (await res.json().catch(() => ({}))) as { error?: string };
+              throw new Error(errJson.error || "Report failed.");
+            }
           }}
           onReply={async ({ parentPostId, replyToAuthor, body }) => {
             const res = await fetch("/api/posts", {
