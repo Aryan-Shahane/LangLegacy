@@ -4,21 +4,21 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import NotificationsBell from "@/components/NotificationsBell";
-import LanguageSwapDropdown from "@/components/LanguageSwapDropdown";
 import { cn } from "@/lib/utils";
 
-/** Landing `/`: Dictionary + Community + Learn anchors. */
+/** Landing `/`: Dictionary + Community + Learn. */
 const LANDING_TABS = [
   { id: "dictionary", label: "Dictionary" },
   { id: "community", label: "Community" },
   { id: "learn", label: "Learn" },
 ] as const;
 
-/** Per-language: Dictionary · Community hub · Learn (moderation under `/mod` only). */
+/** Per-language: Dictionary · Community hub · Learn · Chatrooms. */
 const LANGUAGE_TABS = [
   { id: "dictionary", label: "Dictionary" },
   { id: "community", label: "Community" },
   { id: "learn", label: "Learn" },
+  { id: "chatrooms", label: "Chatrooms" },
 ] as const;
 
 type Props = {
@@ -76,7 +76,7 @@ export default function TopBar({ activeTab, languageCode }: Props) {
     activeTab === "learning"
       ? "learn"
       : activeTab === "chatrooms"
-        ? "community"
+        ? "chatrooms"
         : activeTab === "moderator"
           ? "dictionary"
           : activeTab;
@@ -98,6 +98,8 @@ export default function TopBar({ activeTab, languageCode }: Props) {
                   href = `/${languageCode}`;
                 } else if (tab.id === "community") {
                   href = `/${languageCode}?tab=community&section=forum`;
+                } else if (tab.id === "chatrooms") {
+                  href = `/${languageCode}?tab=chatrooms`;
                 } else {
                   href = `/${languageCode}?tab=${tab.id}`;
                 }
@@ -138,18 +140,18 @@ export default function TopBar({ activeTab, languageCode }: Props) {
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2 md:gap-3">
           <Link
-            href="/#dictionary"
+            href="/dialects"
             className="flex items-center rounded-full border border-[#C3C8C1]/20 bg-[#31493B] px-4 py-2 text-sm text-[#B4CDB8] transition hover:bg-[#3a5848]"
           >
-            Search archives…
+            All Dialects
           </Link>
           <NotificationsBell />
           {checkedAuth && !isAuthenticated ? (
             <Link
               href="/auth"
-              className="rounded-full border border-[#C3C8C1]/30 px-4 py-2 text-sm font-medium text-[#D0E9D4] transition hover:bg-[#30483A]"
+              className="rounded-full bg-[#B24A2D] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#8A3620]"
             >
-              Login / Sign up
+              Sign In
             </Link>
           ) : (
             <div className="relative">
@@ -177,7 +179,6 @@ export default function TopBar({ activeTab, languageCode }: Props) {
               ) : null}
             </div>
           )}
-          <LanguageSwapDropdown currentCodeHint={languageCode} />
         </div>
       </div>
     </header>

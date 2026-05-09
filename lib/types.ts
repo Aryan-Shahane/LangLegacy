@@ -19,6 +19,7 @@ export type Language = {
   contributor_count?: number;
   created_at: string;
   updated_at?: string | null;
+  audio_url?: string | null;
 };
 
 export type Entry = {

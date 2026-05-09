@@ -32,6 +32,7 @@ function coerceLanguage(raw: Record<string, unknown>): Language {
       typeof raw.contributor_count === "number" ? raw.contributor_count : 0,
     created_at: typeof raw.created_at === "string" ? raw.created_at : new Date(0).toISOString(),
     updated_at: typeof raw.updated_at === "string" ? raw.updated_at : null,
+    audio_url: typeof raw.audio_url === "string" ? raw.audio_url : null,
   };
 }
 
@@ -52,6 +53,7 @@ const FALLBACK_LANGUAGES: Language[] = [
     contributor_count: 0,
     created_at: "2026-05-08T00:00:00Z",
     updated_at: null,
+    audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
   },
   {
     _id: "cy",
@@ -69,6 +71,7 @@ const FALLBACK_LANGUAGES: Language[] = [
     contributor_count: 0,
     created_at: "2026-05-08T00:00:00Z",
     updated_at: null,
+    audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
   },
   {
     _id: "kw",
@@ -86,6 +89,7 @@ const FALLBACK_LANGUAGES: Language[] = [
     contributor_count: 0,
     created_at: "2026-05-08T00:00:00Z",
     updated_at: null,
+    audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
   },
   ARCHIVE_DEMO_LANGUAGE,
 ];

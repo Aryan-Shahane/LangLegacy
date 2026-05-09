@@ -146,7 +146,8 @@ export default async function LanguageDictionaryPage({
 
   let topBarActiveTab = "dictionary";
   if (qpTab === "learn" || qpTab === "learning") topBarActiveTab = "learn";
-  else if (qpTab === "community" || qpTab === "chatrooms") topBarActiveTab = "community";
+  else if (qpTab === "community") topBarActiveTab = "community";
+  else if (qpTab === "chatrooms") topBarActiveTab = "chatrooms";
 
   return (
     <div className="min-h-screen bg-[#FBF9F4] text-[#1B1C19]">
