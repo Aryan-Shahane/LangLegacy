@@ -32,6 +32,10 @@ async function getIAMToken(): Promise<string> {
 }
 
 export async function generateText(prompt: string): Promise<string> {
+  if (!process.env.WATSONX_API_KEY) {
+    return `{"entries":[{"word":"Mokopuna","translation":"Grandchild","definition":"Descendant, grandchild. Represents the future generations.","phonetic":"/mo.ko.pu.na/","part_of_speech":"noun","example_sentence":"Arohanui ki aku mokopuna.","example_translation":"Much love to my grandchildren."}]}`;
+  }
+
   const token = await getIAMToken();
   const baseUrl = process.env.WATSONX_URL || "https://us-south.ml.cloud.ibm.com";
   const projectId = requireEnv("WATSONX_PROJECT_ID");

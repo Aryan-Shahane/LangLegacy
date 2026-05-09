@@ -16,29 +16,29 @@ export default async function ContributePage({ params }: { params: Promise<{ lan
   const languageName = typeof languageDoc?.name === "string" ? languageDoc.name : language;
 
   return (
-    <>
+    <div className="min-h-screen bg-[#FBF9F4] text-[#1B1C19]">
       <TopBar activeTab="dictionary" languageCode={language} />
-      <section className="min-h-screen space-y-6 bg-slate-950 px-6 py-8 text-slate-100">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-cyan-500/90">Contribution</p>
-        <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-500">
-          <Link href="/" className="hover:text-slate-300">
-            Languages
-          </Link>
-          <span aria-hidden>|</span>
-          <Link href={`/${language}`} className="hover:text-slate-300">
-            Dictionary ({language})
-          </Link>
+      <section className="mx-auto max-w-4xl space-y-8 px-6 py-12 md:px-12">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#8A3620]">Contribution</p>
+          <div className="mt-2 flex flex-wrap gap-4 text-sm text-[#5A665F]">
+            <Link href="/" className="hover:text-[#1B3022] hover:underline">
+              Languages
+            </Link>
+            <span aria-hidden>|</span>
+            <Link href={`/${language}`} className="hover:text-[#1B3022] hover:underline">
+              Dictionary ({language})
+            </Link>
+          </div>
+          <h1 className="mt-4 font-serif text-3xl font-bold text-[#061B0E] md:text-4xl">Contribute recording · {languageName}</h1>
+          <p className="mt-3 max-w-prose text-[15px] leading-relaxed text-[#434843]">
+            Signed in as <span className="font-medium text-[#1B3022]">{viewer.name}</span>. Record or upload pronunciation audio: it is transcribed locally with Whisper, glossed via IBM Granite
+            on watsonx, reviewed by you, then stored in Cloudinary and Cloudant.
+          </p>
         </div>
-        <h1 className="mt-3 text-2xl font-bold text-slate-100">Contribute recording · {languageName}</h1>
-        <p className="mt-2 max-w-prose text-sm leading-relaxed text-slate-400">
-          Signed in as {viewer.name}. Record or upload pronunciation audio: it is transcribed locally with Whisper, glossed via IBM Granite
-          on watsonx, reviewed by you, then stored in Cloudinary and Cloudant.
-        </p>
-      </div>
 
-      <CommunityRecordingFlow languageCode={language} languageName={languageName} />
+        <CommunityRecordingFlow languageCode={language} languageName={languageName} />
       </section>
-    </>
+    </div>
   );
 }
