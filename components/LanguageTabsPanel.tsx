@@ -9,7 +9,6 @@ import PostComposer from "@/components/PostComposer";
 import ProgressBar from "@/components/ProgressBar";
 import RoomList from "@/components/RoomList";
 import SessionSummary from "@/components/SessionSummary";
-import TabNav from "@/components/TabNav";
 import type { Entry, LearningProgress, Post, Room, UserRole } from "@/lib/types";
 
 type TabKey = "dictionary" | "community" | "chatrooms" | "learning";
@@ -128,7 +127,6 @@ export default function LanguageTabsPanel({
 
   return (
     <div className="space-y-4">
-      <TabNav languageCode={languageCode} activeTab={tab} />
       {tab === "dictionary" ? <DictionaryClient languageCode={languageCode} /> : null}
 
       {tab === "community" ? (

@@ -2,6 +2,7 @@
 
 import type { KeyboardEvent } from "react";
 import ReportModal from "@/components/ReportModal";
+import { Badge } from "@/components/ui/badge";
 import type { Entry } from "@/lib/types";
 import { useExclusivePlayback } from "@/hooks/useExclusivePlayback";
 
@@ -33,23 +34,15 @@ export default function DictionaryEntry({ entry }: { entry: Entry }) {
   return (
     <article
       {...cardProps}
-      className={`panel space-y-2 outline-none ring-cyan-500/40 transition ${
-        hasAudio
-          ? "cursor-pointer hover:border-cyan-600 hover:bg-slate-900 focus-visible:ring-2"
-          : "opacity-95"
-      }`}
+      className={`panel space-y-2 outline-none ring-[#9F4026]/40 transition ${hasAudio ? "cursor-pointer hover:border-[#9F4026]/40 focus-visible:ring-2" : "opacity-95"}`}
     >
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
-        <h3 className="text-lg font-semibold">{entry.word}</h3>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#C3C8C1]/40 pb-2">
+        <h3 className="font-serif text-3xl text-[#061B0E]">{entry.word}</h3>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded bg-slate-700 px-2 py-1 text-xs">{entry.part_of_speech || "other"}</span>
-          <span
-            className={`rounded px-2 py-1 text-xs ${
-              hasAudio ? "bg-cyan-900/60 text-cyan-100" : "bg-slate-800 text-slate-500"
-            }`}
-          >
+          <Badge className="bg-[#D0E9D4] text-[#0B2013]">{entry.part_of_speech || "other"}</Badge>
+          <Badge className={hasAudio ? "bg-[#FFDBD1] text-[#802A11]" : "bg-[#F0EEE9] text-[#737973]"}>
             {pronunciationHint}
-          </span>
+          </Badge>
           <div
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
@@ -67,17 +60,17 @@ export default function DictionaryEntry({ entry }: { entry: Entry }) {
           </div>
         </div>
       </div>
-      {entry.phonetic ? <p className="text-sm text-slate-400">{entry.phonetic}</p> : null}
-      <p>{entry.translation}</p>
+      {entry.phonetic ? <p className="text-sm text-[#434843]">{entry.phonetic}</p> : null}
+      <p className="text-[#1B1C19]">{entry.translation}</p>
       {entry.example_sentence ? (
-        <p className="text-sm italic text-slate-300">
+        <p className="text-sm italic text-[#802A11]">
           {entry.example_sentence}
           {entry.example_translation ? ` (${entry.example_translation})` : ""}
         </p>
       ) : null}
-      <span className="rounded bg-slate-800 px-2 py-1 text-xs">
+      <Badge className="w-fit bg-[#F0EEE9] text-[#434843]">
         {entry.source === "community" ? "Community" : "Archive"}
-      </span>
+      </Badge>
     </article>
   );
 }
