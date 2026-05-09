@@ -20,10 +20,14 @@ async function getCloudantHeaders(): Promise<Record<string, string>> {
   }
 
   const { apiKey } = cloudantConfig();
+  const body = new URLSearchParams({
+    grant_type: "urn:ibm:params:oauth:grant-type:apikey",
+    apikey: apiKey,
+  });
   const res = await fetch("https://iam.cloud.ibm.com/identity/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `grant_type=urn:ibm:params:oauth:grant-type:apikey&apikey=${apiKey}`,
+    body: body.toString(),
   });
   if (!res.ok) {
     throw new Error(`Cloudant IAM token request failed: ${res.status}`);
@@ -38,6 +42,30 @@ async function getCloudantHeaders(): Promise<Record<string, string>> {
   };
 }
 
+function clearCachedToken(): void {
+  cachedToken = null;
+  tokenExpiry = 0;
+}
+
+async function cloudantFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  const initialHeaders = await getCloudantHeaders();
+  const first = await fetch(input, {
+    ...init,
+    headers: { ...initialHeaders, ...(init.headers ?? {}) },
+  });
+  if (first.status !== 401) {
+    return first;
+  }
+
+  // IAM tokens can be revoked/expired early; refresh once and retry.
+  clearCachedToken();
+  const refreshedHeaders = await getCloudantHeaders();
+  return fetch(input, {
+    ...init,
+    headers: { ...refreshedHeaders, ...(init.headers ?? {}) },
+  });
+}
+
 export async function findDocuments(
   db: string,
   selector: Json,
@@ -45,10 +73,8 @@ export async function findDocuments(
   skip = 0
 ): Promise<Json[]> {
   const { base } = cloudantConfig();
-  const headers = await getCloudantHeaders();
-  const res = await fetch(`${base}/${db}/_find`, {
+  const res = await cloudantFetch(`${base}/${db}/_find`, {
     method: "POST",
-    headers,
     cache: "no-store",
     body: JSON.stringify({ selector, limit, skip }),
   });
@@ -61,9 +87,7 @@ export async function findDocuments(
 
 export async function getAllDocuments(db: string): Promise<Json[]> {
   const { base } = cloudantConfig();
-  const headers = await getCloudantHeaders();
-  const res = await fetch(`${base}/${db}/_all_docs?include_docs=true`, {
-    headers,
+  const res = await cloudantFetch(`${base}/${db}/_all_docs?include_docs=true`, {
     cache: "no-store",
   });
   if (!res.ok) {
@@ -77,10 +101,8 @@ export async function getAllDocuments(db: string): Promise<Json[]> {
 
 export async function saveDocument(db: string, doc: Json): Promise<Json> {
   const { base } = cloudantConfig();
-  const headers = await getCloudantHeaders();
-  const res = await fetch(`${base}/${db}`, {
+  const res = await cloudantFetch(`${base}/${db}`, {
     method: "POST",
-    headers,
     cache: "no-store",
     body: JSON.stringify(doc),
   });
@@ -92,9 +114,7 @@ export async function saveDocument(db: string, doc: Json): Promise<Json> {
 
 export async function getDocument(db: string, id: string): Promise<Json | null> {
   const { base } = cloudantConfig();
-  const headers = await getCloudantHeaders();
-  const res = await fetch(`${base}/${db}/${encodeURIComponent(id)}`, {
-    headers,
+  const res = await cloudantFetch(`${base}/${db}/${encodeURIComponent(id)}`, {
     cache: "no-store",
   });
   if (res.status === 404) {
@@ -108,10 +128,8 @@ export async function getDocument(db: string, id: string): Promise<Json | null> 
 
 export async function putDocument(db: string, id: string, doc: Json): Promise<Json> {
   const { base } = cloudantConfig();
-  const headers = await getCloudantHeaders();
-  const res = await fetch(`${base}/${db}/${encodeURIComponent(id)}`, {
+  const res = await cloudantFetch(`${base}/${db}/${encodeURIComponent(id)}`, {
     method: "PUT",
-    headers,
     cache: "no-store",
     body: JSON.stringify(doc),
   });
