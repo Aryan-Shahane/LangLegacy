@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import NotificationsBell from "@/components/NotificationsBell";
+import LanguageSwapDropdown from "@/components/LanguageSwapDropdown";
 import { cn } from "@/lib/utils";
 
 /** Landing `/`: first nav item is Dictionary (language explorer / archives scroll target). */
@@ -144,6 +145,7 @@ export default function TopBar({ activeTab, languageCode }: Props) {
               ) : null}
             </div>
           )}
+          <LanguageSwapDropdown currentCodeHint={languageCode} />
         </div>
       </div>
     </header>

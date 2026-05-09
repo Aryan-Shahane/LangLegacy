@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import TopBar from "@/components/TopBar";
 
 type AuthMode = "login" | "signup";
 type RoleMode = "user" | "moderator";
@@ -138,14 +139,19 @@ function AuthInner() {
 
 export default function AuthPage() {
   return (
-    <Suspense
-      fallback={
-        <section className="mx-auto max-w-md space-y-4 rounded-xl border border-slate-800 bg-slate-900 p-5 text-sm text-slate-400">
-          Loading sign-in...
-        </section>
-      }
-    >
-      <AuthInner />
-    </Suspense>
+    <div className="min-h-screen bg-slate-900">
+      <TopBar activeTab="dictionary" />
+      <div className="flex justify-center px-4 py-10">
+        <Suspense
+          fallback={
+            <section className="mx-auto max-w-md space-y-4 rounded-xl border border-slate-800 bg-slate-900 p-5 text-sm text-slate-400">
+              Loading sign-in...
+            </section>
+          }
+        >
+          <AuthInner />
+        </Suspense>
+      </div>
+    </div>
   );
 }
