@@ -31,6 +31,8 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as Record<string, unknown>;
     const languageCode = typeof body.language_code === "string" ? body.language_code.trim() : "";
     const text = typeof body.body === "string" ? body.body.trim() : "";
+    const parentPostId = typeof body.parent_post_id === "string" ? body.parent_post_id.trim() : "";
+    const replyToAuthor = typeof body.reply_to_author === "string" ? body.reply_to_author.trim() : "";
     if (!languageCode || !text) {
       return NextResponse.json({ error: "language_code and body are required" }, { status: 400 });
     }
@@ -44,6 +46,8 @@ export async function POST(req: NextRequest) {
       author_name: typeof body.author_name === "string" ? body.author_name.trim() || viewer.name : viewer.name || "Anonymous",
       body: text,
       audio_url: typeof body.audio_url === "string" ? body.audio_url : null,
+      parent_post_id: parentPostId || null,
+      reply_to_author: replyToAuthor || null,
       reactions: {},
       reaction_users: {},
       report_count: 0,

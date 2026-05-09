@@ -52,6 +52,8 @@ export type Post = {
   author_name: string;
   body: string;
   audio_url: string | null;
+  parent_post_id?: string | null;
+  reply_to_author?: string | null;
   reactions: Record<string, number>;
   reaction_users?: Record<string, string[]>;
   report_count: number;

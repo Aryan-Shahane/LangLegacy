@@ -20,6 +20,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "email and password are required" }, { status: 400 });
     }
 
+    // Dev login: always allow this test account.
+    if (email === "test@gmail.com" && password === "testtest") {
+      const token = await createSessionToken({
+        userId: "test-user",
+        name: "Test User",
+        role: "user",
+      });
+      const response = NextResponse.json({
+        ok: true,
+        user: { id: "test-user", name: "Test User", email, role: "user" },
+      });
+      setSessionCookie(response, token);
+      return response;
+    }
+
     const matches = (await findDocuments("users", { type: "user", email }, 1, 0)) as StoredUser[];
     const user = matches[0];
     if (!user?.password_hash || !user.password_salt) {

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useExclusivePlayback } from "@/hooks/useExclusivePlayback";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import type { Entry } from "@/lib/types";
 
 export default function FlashCard({
@@ -15,65 +17,79 @@ export default function FlashCard({
   const { toggle, isPlaying, hasAudio } = useExclusivePlayback(entry.audio_url);
 
   return (
-    <div className="panel space-y-3">
-      <p className="text-xs uppercase tracking-wide text-slate-500">Flashcard</p>
-      <p className="text-2xl font-semibold text-slate-100">{entry.word}</p>
-      {entry.phonetic ? <p className="text-sm text-slate-400">{entry.phonetic}</p> : null}
-      {hasAudio ? (
-        <button
-          type="button"
-          onClick={() => toggle()}
-          className="rounded border border-slate-700 px-2 py-1 text-xs hover:bg-slate-800"
-        >
-          {isPlaying ? "Pause audio" : "Play audio"}
-        </button>
-      ) : null}
+    <div className="space-y-6">
+      <Card className="relative mx-auto max-w-xl border-[#C3C8C1]/35 bg-[#F5F3EE] p-10 text-center">
+        <h1 className="font-serif text-5xl tracking-tight text-[#061B0E]">{entry.word}</h1>
+        {hasAudio ? (
+          <button
+            type="button"
+            onClick={() => toggle()}
+            className="mx-auto mt-5 grid h-12 w-12 place-content-center rounded-full bg-[#9F4026] text-white transition-transform active:scale-95"
+            aria-label={isPlaying ? "Pause audio" : "Play audio"}
+          >
+            {isPlaying ? "❚❚" : "🔊"}
+          </button>
+        ) : null}
 
-      {!revealed ? (
-        <button
-          type="button"
-          onClick={() => setRevealed(true)}
-          className="rounded bg-cyan-700 px-3 py-2 text-sm hover:bg-cyan-600"
-        >
-          Show answer
-        </button>
-      ) : (
-        <div className="space-y-2">
-          <p className="text-lg text-slate-100">{entry.translation}</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setRevealed(false);
-                onRate("missed");
-              }}
-              className="rounded bg-rose-700 px-3 py-1.5 text-sm"
-            >
-              ✗ Missed
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setRevealed(false);
-                onRate("almost");
-              }}
-              className="rounded bg-amber-700 px-3 py-1.5 text-sm"
-            >
-              ~ Almost
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setRevealed(false);
-                onRate("got");
-              }}
-              className="rounded bg-emerald-700 px-3 py-1.5 text-sm"
-            >
-              ✓ Got it
-            </button>
+        <div className="my-8 h-px w-full bg-gradient-to-r from-transparent via-[#C3C8C1]/45 to-transparent" />
+
+        {revealed ? (
+          <div className="space-y-3">
+            <p className="font-serif text-2xl italic text-[#9F4026]">{entry.translation}</p>
+            {entry.example_sentence ? (
+              <p className="mx-auto max-w-md text-sm leading-relaxed text-[#434843]">
+                “{entry.example_sentence}”
+                {entry.example_translation ? ` — ${entry.example_translation}` : ""}
+              </p>
+            ) : (
+              <p className="mx-auto max-w-md text-sm leading-relaxed text-[#434843]">
+                Tap a rating below to continue your session.
+              </p>
+            )}
           </div>
+        ) : (
+          <div className="space-y-3">
+            {entry.phonetic ? <p className="text-sm text-[#434843]">{entry.phonetic}</p> : null}
+            <Button variant="outline" onClick={() => setRevealed(true)} className="mx-auto">
+              Show answer
+            </Button>
+          </div>
+        )}
+      </Card>
+
+      {revealed ? (
+        <div className="mx-auto flex max-w-xl flex-wrap justify-center gap-4">
+          <Button
+            variant="outline"
+            className="h-12 w-40 justify-center border-rose-400/50 text-rose-700 hover:bg-[#FFDAD6]"
+            onClick={() => {
+              setRevealed(false);
+              onRate("missed");
+            }}
+          >
+            ✕ Missed
+          </Button>
+          <Button
+            variant="outline"
+            className="h-12 w-40 justify-center border-[#737973]/40 text-[#434843] hover:bg-[#EAE8E3]"
+            onClick={() => {
+              setRevealed(false);
+              onRate("almost");
+            }}
+          >
+            ~ Almost
+          </Button>
+          <Button
+            className="h-12 w-40 justify-center bg-[#1B3022] text-white hover:bg-[#061B0E]"
+            onClick={() => {
+              setRevealed(false);
+              onRate("got");
+            }}
+          >
+            ✓ Got it
+          </Button>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
