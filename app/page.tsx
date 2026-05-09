@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import SiteFooter from "@/components/SiteFooter";
+import TopBar from "@/components/TopBar";
 import LanguageCard from "@/components/LanguageCard";
 import SearchBar from "@/components/SearchBar";
 import type { Language } from "@/lib/types";
@@ -74,7 +75,7 @@ function DictionaryPanel({
           {loading ? <p className="text-sm text-[#5A665F]">Loading archives...</p> : null}
           {!loading &&
             filteredLanguages.map((language) => (
-              <div key={language._id} className="rounded-2xl bg-[#E8DDD0] p-1 shadow-sm">
+              <div key={language._id} className="rounded-2xl bg-[#F5F3EE] p-1">
                 <LanguageCard language={language} />
               </div>
             ))}
@@ -137,69 +138,21 @@ export default function HomePage() {
     });
   }, [languages, query]);
 
-  const tabItems: { id: LandingTab; label: string; href: string }[] = [
-    { id: "home", label: "Home", href: "/" },
-    { id: "dictionary", label: "Dictionary", href: "/mi?tab=dictionary" },
-    { id: "community", label: "Community", href: "/mi?tab=community" },
-    { id: "chatrooms", label: "Chatrooms", href: "/mi?tab=chatrooms" },
-    { id: "learning", label: "Learning", href: "/mi?tab=learning" },
-  ];
-
   return (
-    <div className="-mx-4 -mt-6 bg-[#FAF6F0] text-[#1F2E27]">
-      <style jsx global>{`
-        body {
-          background: #faf6f0;
-          color: #1f2e27;
-          font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-        }
-        main {
-          max-width: none !important;
-          padding: 0 !important;
-        }
-        main > header {
-          margin: 0 !important;
-          border: 0 !important;
-          padding: 0 !important;
-          display: none !important;
-        }
-      `}</style>
+    <div className="bg-[#FBF9F4] text-[#1B1C19]">
+      <TopBar activeTab={activeTab} />
 
-      <section className="bg-[#2D4A3E] px-6 pb-20 pt-6 text-[#F4EEE5] md:px-12">
+      <section className="bg-[#1B3022] px-6 pb-20 pt-10 text-[#F4EEE5] md:px-12">
         <div className="mx-auto max-w-6xl">
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#4A665B] pb-4">
-            <Link href="/" className="font-serif text-4xl tracking-tight text-[#F4EEE5]">
-              LangLegacy
-            </Link>
-            <nav className="flex flex-wrap items-center gap-2" aria-label="Landing sections">
-              {tabItems.map((tab) => (
-                <Link
-                  key={tab.id}
-                  href={tab.href}
-                  className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-                    activeTab === tab.id ? "bg-[#E2E9DE] text-[#1F2E27]" : "text-[#E1D7C8] hover:bg-[#365649]"
-                  }`}
-                >
-                  {tab.label}
-                </Link>
-              ))}
-              <Link
-                href="/auth"
-                className="rounded-full border border-[#6C8478] px-4 py-1.5 text-sm font-medium text-[#E1D7C8] hover:bg-[#365649]"
-              >
-                Login / Sign up
-              </Link>
-            </nav>
-          </div>
-          <div className="mt-4 text-center">
+          <div className="text-center">
             <p className="text-[11px] uppercase tracking-[0.35em] text-[#D9CDC0]">The Digital Hearth</p>
-            <h1 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">
+            <h1 className="mt-4 font-serif text-5xl leading-tight md:text-6xl">
               Preserve the Words That
               <br />
               <span className="italic font-normal">Shape a Culture</span>
             </h1>
           </div>
-          <div className="mx-auto mt-10 max-w-2xl rounded-2xl bg-[#EFE5D8] p-2 shadow-lg">
+          <div className="mx-auto mt-10 max-w-2xl rounded-2xl bg-[#FBF9F4] p-2">
             <SearchBar query={query} onQueryChange={setQuery} totalLoaded={filteredLanguages.length} hasMore={false} />
           </div>
         </div>
@@ -207,7 +160,7 @@ export default function HomePage() {
 
       <DictionaryPanel loading={loading} filteredLanguages={filteredLanguages} error={error} />
 
-      <section className="bg-[#163629] px-6 py-14 text-[#F4EEE5] md:px-12">
+      <section className="bg-[#1B3022] px-6 py-14 text-[#F4EEE5] md:px-12">
         <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-2">
           <div>
             <p className="text-[11px] uppercase tracking-[0.3em] text-[#C8BBAD]">Voice of the Ancestors</p>
@@ -230,16 +183,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer className="bg-[#FAF6F0] px-6 py-8 md:px-12">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 text-sm text-[#5A665F]">
-          <p>
-            <span className="font-serif text-lg text-[#1F2E27]">LangLegacy</span> · Preserving the breath of our ancestors.
-          </p>
-          <button type="button" className="rounded-full bg-[#C4622D] px-6 py-2 font-medium text-white">
-            Join the Circle
-          </button>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

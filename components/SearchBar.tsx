@@ -1,5 +1,8 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
 type Props = {
   query: string;
   onQueryChange: (value: string) => void;
@@ -18,19 +21,19 @@ export default function SearchBar({
   loadingMore,
 }: Props) {
   return (
-    <div className="panel space-y-2">
+    <div className="panel space-y-3">
       <div className="flex gap-2">
-        <input
+        <Input
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
           placeholder="Search by endangered-language word or English translation…"
-          className="w-full rounded border border-slate-700 bg-slate-950 px-3 py-2"
+          className="h-11 border-[#C3C8C1] bg-[#FBF9F4] text-[#1B1C19]"
         />
-        <button type="button" onClick={() => onQueryChange("")} className="rounded bg-slate-700 px-3 py-2">
+        <Button type="button" variant="outline" onClick={() => onQueryChange("")} className="rounded-xl">
           Clear
-        </button>
+        </Button>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#434843]">
         <p>
           {totalLoaded === 0
             ? "No entries loaded yet."
@@ -38,14 +41,16 @@ export default function SearchBar({
           {hasMore ? ` · More available — use “Load more”.` : totalLoaded ? ` · End of dictionary for this query.` : null}
         </p>
         {hasMore ? (
-          <button
+          <Button
             type="button"
+            variant="pill"
+            size="sm"
             disabled={loadingMore}
             onClick={() => onLoadMore?.()}
-            className="rounded bg-slate-800 px-3 py-1.5 text-slate-200 hover:bg-slate-700 disabled:opacity-40"
+            className="disabled:opacity-40"
           >
             {loadingMore ? "Loading…" : "Load more"}
-          </button>
+          </Button>
         ) : null}
       </div>
     </div>

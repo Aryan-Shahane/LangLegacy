@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 const TABS = [
   { id: "dictionary", label: "Dictionary" },
@@ -24,11 +25,10 @@ export default function TabNav({
         <Link
           key={tab.id}
           href={`/${languageCode}?tab=${tab.id}`}
-          className={`rounded px-3 py-1.5 text-sm ${
-            activeTab === tab.id
-              ? "bg-cyan-700 text-white"
-              : "border border-slate-700 text-slate-300 hover:bg-slate-900"
-          }`}
+          className={cn(
+            "rounded-full px-4 py-1.5 text-sm font-medium transition-all",
+            activeTab === tab.id ? "bg-[#D0E9D4] text-[#0B2013]" : "text-[#D0E9D4] hover:bg-[#30483A]"
+          )}
         >
           {tab.label}
         </Link>
