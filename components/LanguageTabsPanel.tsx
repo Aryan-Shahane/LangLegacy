@@ -3,14 +3,13 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import DictionaryClient from "@/app/[language]/DictionaryClient";
+import CommunityFeed from "@/components/CommunityFeed";
 import FlashCard from "@/components/FlashCard";
-import PostCard from "@/components/PostCard";
-import PostComposer from "@/components/PostComposer";
 import ProgressBar from "@/components/ProgressBar";
 import RoomList from "@/components/RoomList";
 import SessionSummary from "@/components/SessionSummary";
 import TabNav from "@/components/TabNav";
-import type { Entry, LearningProgress, Post, Room, UserRole } from "@/lib/types";
+import type { Entry, LearningProgress, Room, UserRole } from "@/lib/types";
 
 type TabKey = "dictionary" | "community" | "chatrooms" | "learning";
 
@@ -22,7 +21,6 @@ export default function LanguageTabsPanel({
   viewerRole: UserRole;
 }) {
   const [tab, setTab] = useState<TabKey>("dictionary");
-  const [posts, setPosts] = useState<Post[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [progress, setProgress] = useState<LearningProgress | null>(null);
   const [cards, setCards] = useState<Entry[]>([]);
@@ -32,12 +30,6 @@ export default function LanguageTabsPanel({
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [completed, setCompleted] = useState(false);
   const searchParams = useSearchParams();
-
-  const loadPosts = async () => {
-    const res = await fetch(`/api/posts?language_code=${encodeURIComponent(languageCode)}`);
-    if (!res.ok) return;
-    setPosts((await res.json()) as Post[]);
-  };
 
   const loadRooms = async () => {
     const res = await fetch(`/api/rooms?language_code=${encodeURIComponent(languageCode)}`);
@@ -73,7 +65,6 @@ export default function LanguageTabsPanel({
   }, [searchParams]);
 
   useEffect(() => {
-    if (tab === "community") void loadPosts();
     if (tab === "chatrooms") void loadRooms();
     if (tab === "learning") {
       void loadProgress();
@@ -132,40 +123,7 @@ export default function LanguageTabsPanel({
       {tab === "dictionary" ? <DictionaryClient languageCode={languageCode} /> : null}
 
       {tab === "community" ? (
-        <div className="space-y-3">
-          <PostComposer
-            onSubmit={async (body) => {
-              await fetch("/api/posts", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ language_code: languageCode, body }),
-              });
-              await loadPosts();
-            }}
-          />
-          {posts.map((post) => (
-            <PostCard
-              key={post._id}
-              post={post}
-              onReact={async (emoji) => {
-                await fetch(`/api/posts/${post._id}/react`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ emoji }),
-                });
-                await loadPosts();
-              }}
-              onReport={async (payload) => {
-                await fetch(`/api/posts/${post._id}/report`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ ...payload, language_code: languageCode }),
-                });
-              }}
-            />
-          ))}
-          {posts.length === 0 ? <p className="text-sm text-slate-500">No posts yet.</p> : null}
-        </div>
+        <CommunityFeed languageCode={languageCode} />
       ) : null}
 
       {tab === "chatrooms" ? (

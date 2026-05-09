@@ -30,7 +30,8 @@ export function getViewerIdentityFromHeaders(headers: Headers): SessionIdentity 
 }
 
 export async function getSessionFromCookie(): Promise<SessionIdentity | null> {
-  const token = cookies().get("session")?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get("session")?.value;
   const secret = process.env.AUTH_SECRET;
   if (!token || !secret) return null;
   try {
