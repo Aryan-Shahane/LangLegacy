@@ -1,47 +1,34 @@
-"use client";
+import Link from "next/link";
+import CommunityRecordingFlow from "@/components/CommunityRecordingFlow";
+import { getDocument } from "@/lib/cloudant";
 
-import { useState } from "react";
-import AudioRecorder from "@/components/AudioRecorder";
-
-export default function ContributePage({
-  params,
-}: {
-  params: { language: string };
-}) {
-  const [status, setStatus] = useState("");
-
-  const submit = async (blob: Blob) => {
-    setStatus("Submitting...");
-    const bytes = new Uint8Array(await blob.arrayBuffer());
-    let binary = "";
-    for (const byte of bytes) {
-      binary += String.fromCharCode(byte);
-    }
-    const base64 = btoa(binary);
-    const res = await fetch("/api/entries", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        language_code: params.language,
-        word: "community contribution",
-        phonetic: null,
-        translation: "community contribution",
-        part_of_speech: "other",
-        example_sentence: null,
-        example_translation: null,
-        source: "community",
-        audio_base64: base64,
-        audio_type: "audio/webm",
-      }),
-    });
-    setStatus(res.ok ? "Saved successfully" : "Failed to save");
-  };
+export default async function ContributePage({ params }: { params: { language: string } }) {
+  const languageDoc = await getDocument("languages", params.language);
+  const languageName = typeof languageDoc?.name === "string" ? languageDoc.name : params.language;
 
   return (
-    <section className="space-y-4">
-      <h1 className="text-2xl font-bold">Contribute Recording ({params.language})</h1>
-      <AudioRecorder onRecordingComplete={(blob) => void submit(blob)} />
-      <p className="text-sm text-slate-300">{status}</p>
+    <section className="space-y-6">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-cyan-500/90">Community</p>
+        <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-500">
+          <Link href="/" className="hover:text-slate-300">
+            Languages
+          </Link>
+          <span aria-hidden>|</span>
+          <Link href={`/${params.language}`} className="hover:text-slate-300">
+            Dictionary ({params.language})
+          </Link>
+        </div>
+        <h1 className="mt-3 text-2xl font-bold text-slate-100">Anonymous contribution · {languageName}</h1>
+        <p className="mt-2 max-w-prose text-sm leading-relaxed text-slate-400">
+          Speak or read a targeted word aloud in {languageName}. LangLegacy keeps your browser recording on-device until you publish, pipes it
+          through local Whisper transcription, summarizes gloss fields with IBM watsonx for you to tighten, attaches the uncompressed clip to{" "}
+          <span className="text-slate-200">one</span> community dictionary row, then forgets whoever submitted it—think of every clip as donating
+          a pronunciation sample without attribution metadata.
+        </p>
+      </div>
+
+      <CommunityRecordingFlow languageCode={params.language} languageName={languageName} />
     </section>
   );
 }
