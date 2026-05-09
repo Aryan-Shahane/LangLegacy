@@ -22,7 +22,15 @@ export async function GET(req: NextRequest) {
       )) as Room[];
     } catch (dbError) {
       console.warn("Cloudant unreachable, falling back to mock rooms", dbError);
-      rooms = MOCK_ROOMS.filter(r => r.language_code === languageCode);
+    }
+
+    // Merge in mock rooms if DB is empty or missing them
+    const mockRooms = MOCK_ROOMS.filter(r => r.language_code === languageCode);
+    const existingIds = new Set(rooms.map(r => r._id));
+    for (const mockRoom of mockRooms) {
+      if (!existingIds.has(mockRoom._id)) {
+        rooms.push(mockRoom);
+      }
     }
 
     // Ensure a "General" room always exists
@@ -57,9 +65,12 @@ export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as { language_code?: string; name?: string; description?: string };
     const viewer = await requireSession();
-    if (viewer.role !== "moderator" && viewer.role !== "admin") {
-      return NextResponse.json({ error: "Only moderators can create rooms" }, { status: 403 });
+    
+    // Allow any logged-in user to create a room
+    if (!viewer.userId) {
+      return NextResponse.json({ error: "Must be logged in to create a room" }, { status: 401 });
     }
+
     if (!body.language_code || !body.name) {
       return NextResponse.json({ error: "language_code and name are required" }, { status: 400 });
     }

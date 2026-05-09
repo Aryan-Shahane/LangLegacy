@@ -120,39 +120,37 @@ export default function RoomList({
             ) : null}
           </div>
           
-          {(viewerRole === "moderator" || viewerRole === "admin") && (
-            <div className="mt-4">
-              <Card className="space-y-3 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#737973]">Create Circle</p>
-                <div className="grid gap-2 xl:grid-cols-2">
-                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Room name" />
-                  <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    disabled={busyCreate}
-                    onClick={async () => {
-                      setCreateError(null);
-                      setBusyCreate(true);
-                      try {
-                        await onCreateRoom(name, description);
-                        setName("");
-                        setDescription("");
-                      } catch (err) {
-                        setCreateError(err instanceof Error ? err.message : "Failed to create room.");
-                      } finally {
-                        setBusyCreate(false);
-                      }
-                    }}
-                  >
-                    {busyCreate ? "Creating..." : "Create room"}
-                  </Button>
-                  {createError ? <p className="text-xs text-rose-700">{createError}</p> : null}
-                </div>
-              </Card>
-            </div>
-          )}
+          <div className="mt-4">
+            <Card className="space-y-3 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#737973]">Create Circle</p>
+              <div className="grid gap-2 xl:grid-cols-2">
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Room name" />
+                <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  disabled={busyCreate}
+                  onClick={async () => {
+                    setCreateError(null);
+                    setBusyCreate(true);
+                    try {
+                      await onCreateRoom(name, description);
+                      setName("");
+                      setDescription("");
+                    } catch (err) {
+                      setCreateError(err instanceof Error ? err.message : "Failed to create room.");
+                    } finally {
+                      setBusyCreate(false);
+                    }
+                  }}
+                >
+                  {busyCreate ? "Creating..." : "Create room"}
+                </Button>
+                {createError ? <p className="text-xs text-rose-700">{createError}</p> : null}
+              </div>
+            </Card>
+          </div>
         </section>
 
         {/* Chat Window Column */}
