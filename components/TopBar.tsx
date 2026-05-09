@@ -5,8 +5,16 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
-const TABS = [
+const LANDING_TABS = [
+  { id: "home", label: "Home" },
   { id: "dictionary", label: "Dictionary" },
+  { id: "community", label: "Community" },
+  { id: "chatrooms", label: "Chatrooms" },
+  { id: "learning", label: "Learning" },
+] as const;
+
+const LANGUAGE_TABS = [
+  { id: "home", label: "Home" },
   { id: "community", label: "Community" },
   { id: "chatrooms", label: "Chatrooms" },
   { id: "learning", label: "Learning" },
@@ -22,6 +30,7 @@ export default function TopBar({ activeTab, languageCode }: Props) {
   const [loggingOut, setLoggingOut] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checkedAuth, setCheckedAuth] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -46,11 +55,10 @@ export default function TopBar({ activeTab, languageCode }: Props) {
   }, []);
 
   const handleLogout = async () => {
-    const confirmed = window.confirm("Logout?");
-    if (!confirmed) return;
     setLoggingOut(true);
     try {
       await fetch("/api/auth/logout", { method: "POST" });
+      setMenuOpen(false);
       setIsAuthenticated(false);
       router.push("/");
       router.refresh();
@@ -58,6 +66,8 @@ export default function TopBar({ activeTab, languageCode }: Props) {
       setLoggingOut(false);
     }
   };
+
+  const tabs = languageCode ? LANGUAGE_TABS : LANDING_TABS;
 
   return (
     <header className="sticky top-0 z-40 border-b border-[#C3C8C1]/20 bg-[#1B3022] text-[#D0E9D4]">
@@ -67,8 +77,11 @@ export default function TopBar({ activeTab, languageCode }: Props) {
             LangLegacy
           </Link>
           <nav className="flex items-center gap-1" aria-label="Primary">
-            {TABS.map((tab) => {
-              const href = languageCode ? `/${languageCode}?tab=${tab.id}` : `/?tab=${tab.id}`;
+            {tabs.map((tab) => {
+              let href = "/";
+              if (tab.id === "dictionary") href = "/#dictionary";
+              else if (tab.id !== "home" && languageCode) href = `/${languageCode}?tab=${tab.id}`;
+              else if (tab.id !== "home") href = `/mi?tab=${tab.id}`;
               return (
                 <Link
                   key={tab.id}
@@ -96,16 +109,30 @@ export default function TopBar({ activeTab, languageCode }: Props) {
               Login / Sign up
             </Link>
           ) : (
-            <button
-              type="button"
-              disabled={loggingOut}
-              onClick={() => void handleLogout()}
-              aria-label="Log out"
-              title="Log out"
-              className="grid h-9 w-9 place-content-center rounded-full border border-[#C3C8C1]/30 text-lg transition hover:bg-[#30483A] disabled:opacity-60"
-            >
-              ○
-            </button>
+            <div className="relative">
+              <button
+                type="button"
+                disabled={loggingOut}
+                onClick={() => setMenuOpen((prev) => !prev)}
+                aria-label="Account menu"
+                title="Account menu"
+                className="grid h-9 w-9 place-content-center rounded-full border border-[#C3C8C1]/30 text-lg transition hover:bg-[#30483A] disabled:opacity-60"
+              >
+                ○
+              </button>
+              {menuOpen ? (
+                <div className="absolute right-0 top-11 min-w-[120px] rounded-md border border-[#C3C8C1]/20 bg-[#22382B] p-1 shadow-lg">
+                  <button
+                    type="button"
+                    disabled={loggingOut}
+                    onClick={() => void handleLogout()}
+                    className="w-full rounded px-3 py-2 text-left text-sm text-[#D0E9D4] transition hover:bg-[#30483A] disabled:opacity-60"
+                  >
+                    {loggingOut ? "Logging out..." : "Logout"}
+                  </button>
+                </div>
+              ) : null}
+            </div>
           )}
         </div>
       </div>

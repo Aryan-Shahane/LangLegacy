@@ -24,6 +24,7 @@ export default async function LanguageDictionaryPage({
   }
   const dictionaryTitle = languageDoc?.name ? `${languageDoc.name} Dictionary` : `${language} Dictionary`;
   const activeTab = (resolvedSearchParams?.tab || "dictionary").toLowerCase();
+  const topBarActiveTab = activeTab === "dictionary" ? "home" : activeTab;
   const tabs = [
     { id: "dictionary", label: "Dictionary" },
     { id: "community", label: "Community" },
@@ -33,7 +34,7 @@ export default async function LanguageDictionaryPage({
 
   return (
     <div className="min-h-screen bg-[#FBF9F4] text-[#1B1C19]">
-      <TopBar activeTab={activeTab} languageCode={language} />
+      <TopBar activeTab={topBarActiveTab} languageCode={language} />
 
       <section className="px-6 py-12 md:px-12">
         <div className="mx-auto max-w-6xl text-center">
