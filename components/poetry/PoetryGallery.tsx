@@ -5,6 +5,12 @@ import PoemCard from "@/components/poetry/PoemCard";
 import PoemComposer from "@/components/poetry/PoemComposer";
 import type { Language, Poem } from "@/lib/types";
 
+type MePayload = {
+  authenticated?: boolean;
+  can_moderate?: boolean;
+  user?: { userId: string; role: string };
+};
+
 export default function PoetryGallery({
   languageCode,
   translationsLocked,
@@ -17,12 +23,32 @@ export default function PoetryGallery({
   const [languages, setLanguages] = useState<Language[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [viewerUserId, setViewerUserId] = useState<string | null>(null);
+  const [viewerCanModerate, setViewerCanModerate] = useState(false);
 
   const languageDisplayName = useMemo(() => {
     const code = languageCode.trim().toLowerCase();
     const hit = languages.find((l) => l.code.trim().toLowerCase() === code);
     return hit?.name?.trim() || languageCode.trim().toUpperCase() || "this language";
   }, [languages, languageCode]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/auth/me", { cache: "no-store" });
+        const data = (await res.json()) as MePayload;
+        if (cancelled || !data.authenticated || !data.user) return;
+        setViewerUserId(data.user.userId);
+        setViewerCanModerate(!!data.can_moderate);
+      } catch {
+        /* optional */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let m = true;
@@ -94,7 +120,10 @@ export default function PoetryGallery({
           languageCode={languageCode}
           languageDisplayName={languageDisplayName}
           translationsLocked={translationsLocked}
+          viewerUserId={viewerUserId}
+          viewerCanModerate={viewerCanModerate}
           onReact={(emoji) => reactFor(p._id, emoji)}
+          onGlossRefreshed={load}
         />
       ))}
     </div>

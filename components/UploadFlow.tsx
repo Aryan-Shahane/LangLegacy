@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import TranscriptionProgressBar from "@/components/community/TranscriptionProgressBar";
+import { postTranscribeWithProgress } from "@/components/community/transcribeWithProgress";
 import type { ExtractedEntry, Language } from "@/lib/types";
 
 type Phase = "pick" | "run" | "review" | "save" | "done";
@@ -45,6 +47,8 @@ export default function UploadFlow() {
   const [combinedTranscripts, setCombinedTranscripts] = useState<Array<{ file: string; text: string }>>([]);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [savedCount, setSavedCount] = useState(0);
+  const [bulkTranscribePct, setBulkTranscribePct] = useState(0);
+  const [bulkTranscribeLabel, setBulkTranscribeLabel] = useState("");
 
   useEffect(() => {
     void (async () => {
@@ -86,26 +90,33 @@ export default function UploadFlow() {
       let index = 0;
       for (const file of pendingFiles) {
         index += 1;
-        setLiveLog(`(${index}/${pendingFiles.length}) Uploading audio…`);
+        setLiveLog(`(${index}/${pendingFiles.length}) Starting transcription…`);
+        setBulkTranscribePct(0);
+        setBulkTranscribeLabel("");
 
         const fd = new FormData();
         fd.append("audio", file);
         fd.append("language_code", selectedLanguage.code);
-        const transcribeRes = await fetch("/api/transcribe", {
-          method: "POST",
-          body: fd,
+        const { ok, body } = await postTranscribeWithProgress(fd, (pct, label) => {
+          setBulkTranscribePct(pct);
+          setBulkTranscribeLabel(label);
         });
-        const transcribeJson = (await transcribeRes.json()) as {
+        setBulkTranscribePct(0);
+        setBulkTranscribeLabel("");
+        const transcribeJson = body as {
           transcript?: string;
           error?: string;
         };
-        if (!transcribeRes.ok) {
-          throw new Error(transcribeJson.error || `"${file.name}" transcription failed (${transcribeRes.status})`);
+        if (!ok) {
+          throw new Error(
+            typeof transcribeJson.error === "string"
+              ? transcribeJson.error
+              : `"${file.name}" transcription failed`
+          );
         }
 
         const transcript = transcribeJson.transcript?.trim() || "";
 
-        setLiveLog(`(${index}/${pendingFiles.length}) Transcribing speech…`);
         setLiveLog(`(${index}/${pendingFiles.length}) Extracting vocabulary…`);
 
         const extractRes = await fetch("/api/extract", {
@@ -258,9 +269,14 @@ export default function UploadFlow() {
       ) : null}
 
       {phase === "run" ? (
-        <div className="panel space-y-2 text-sm text-slate-200">
+        <div className="panel space-y-3 text-sm text-slate-200">
           <p className="font-semibold text-amber-200/90">Processing bulk recordings</p>
           <p>{liveLog || "Preparing Whisper…"}</p>
+          {bulkTranscribePct > 0 || bulkTranscribeLabel ? (
+            <div className="rounded-lg border border-slate-600/60 bg-slate-900/40 p-2">
+              <TranscriptionProgressBar percent={bulkTranscribePct} phaseLabel={bulkTranscribeLabel} />
+            </div>
+          ) : null}
           <p className="text-xs text-slate-400">Closing this tab interrupts the ingest — keep this page open.</p>
         </div>
       ) : null}

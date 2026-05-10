@@ -41,7 +41,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
-    const language_code = typeof body.language_code === "string" ? body.language_code.trim() : "";
+    const language_code =
+      typeof body.language_code === "string" ? body.language_code.trim().toLowerCase() : "";
     const title = typeof body.title === "string" ? body.title.trim() : "";
     const body_original = typeof body.body_original === "string" ? body.body_original.trim() : "";
     if (!language_code || !title || !body_original) {

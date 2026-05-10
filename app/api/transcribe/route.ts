@@ -16,9 +16,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Upload the raw audio regardless
+    const nameLower = (audio.name || "").toLowerCase();
     let ext = "wav";
     if (audio.type.includes("webm")) ext = "webm";
-    if (audio.type.includes("mp4")) ext = "mp4";
+    else if (audio.type.includes("mp4")) ext = "mp4";
+    else if (audio.type.includes("mpeg") || audio.type.includes("mp3")) ext = "mp3";
+    else if (nameLower.endsWith(".mp3")) ext = "mp3";
+    else if (nameLower.endsWith(".webm")) ext = "webm";
+    else if (nameLower.endsWith(".m4a") || nameLower.endsWith(".mp4")) ext = "mp4";
     const rawKey = `raw/${randomUUID()}.${ext}`;
     const rawBuffer = Buffer.from(await audio.arrayBuffer());
     let rawAudioUrl: string;
@@ -40,16 +45,25 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Language IS supported — attempt transcription
+    // Language IS supported — attempt transcription (Whisper may be down or unset)
     let whisperResult: { transcript: string; language_code: string };
     try {
       whisperResult = await transcribeAudio(audio, languageCode);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "";
-      const body =
-        /upload|Cloudinary/i.test(msg) ? "Audio upload failed. Please try again." : "Transcription server unavailable.";
-      const status = /upload|Cloudinary/i.test(msg) ? 502 : 503;
-      return NextResponse.json({ error: body }, { status });
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/upload|Cloudinary/i.test(msg)) {
+        return NextResponse.json({ error: "Audio upload failed. Please try again." }, { status: 502 });
+      }
+      const reason = msg.includes("WHISPER_SERVER_URL")
+        ? "Whisper is not configured: set WHISPER_SERVER_URL in .env.local and run the local Whisper server (see QUICKSTART.md). Your audio was saved — type the transcript in the form."
+        : `Could not reach the transcription service (${msg.slice(0, 180)}). Your audio was saved — type the transcript manually, or retry after the server is up.`;
+      return NextResponse.json({
+        transcript: "",
+        language_code: languageCode,
+        raw_audio_url: rawAudioUrl,
+        audio_only: true,
+        audio_only_reason: reason,
+      });
     }
 
     // Save transcript to a local file for the user

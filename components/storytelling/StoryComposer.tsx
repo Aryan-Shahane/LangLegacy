@@ -1,218 +1,119 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { suggestKeywordsFromTranscript } from "@/components/community/suggestKeywordsFromTranscript";
+import TranscriptionProgressBar from "@/components/community/TranscriptionProgressBar";
+import { useAudioTranscription } from "@/components/community/useAudioTranscription";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-
-async function inferDurationSeconds(file: File): Promise<number> {
-  return new Promise((resolve) => {
-    try {
-      const url = URL.createObjectURL(file);
-      const audio = new Audio(url);
-      let settled = false;
-      const finish = () => {
-        if (settled) return;
-        settled = true;
-        URL.revokeObjectURL(url);
-      };
-      const done = (n: number) => {
-        finish();
-        resolve(n);
-      };
-      const timeout = window.setTimeout(() => done(1), 10000);
-      audio.addEventListener(
-        "loadedmetadata",
-        () => {
-          window.clearTimeout(timeout);
-          const d = Number.isFinite(audio.duration) ? Math.max(1, Math.round(audio.duration)) : 1;
-          done(d);
-        },
-        { once: true }
-      );
-      audio.addEventListener(
-        "error",
-        () => {
-          window.clearTimeout(timeout);
-          done(1);
-        },
-        { once: true }
-      );
-    } catch {
-      resolve(1);
-    }
-  });
-}
+import type { Language } from "@/lib/types";
 
 export default function StoryComposer({
   languageCode,
+  languageDisplayName: languageDisplayNameProp,
   translationsLocked,
   onCreated,
 }: {
   languageCode: string;
+  /** For `/api/extract` — falls back to resolved name from `/api/languages`. */
+  languageDisplayName?: string;
   translationsLocked: boolean;
   onCreated: () => Promise<void>;
 }) {
+  const [languages, setLanguages] = useState<Language[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [transcript, setTranscript] = useState("");
-  const [durationSeconds, setDurationSeconds] = useState(1);
-  const [audioFileLabel, setAudioFileLabel] = useState<string | null>(null);
-  const [transcribing, setTranscribing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordElapsedSec, setRecordElapsedSec] = useState(0);
+  const [suggestedWords, setSuggestedWords] = useState<string[]>([]);
+  const [keywordsLoading, setKeywordsLoading] = useState(false);
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<BlobPart[]>([]);
-  const streamRef = useRef<MediaStream | null>(null);
-  const recordIntervalRef = useRef<number | null>(null);
-  const recordStartedAtRef = useRef<number>(0);
-  const discardRecordingRef = useRef(false);
-
-  const processAudioFile = useCallback(
-    async (file: File, label: string) => {
-      setError(null);
-      setAudioFileLabel(label);
-      setTranscribing(true);
-      setAudioUrl(null);
-      setTranscript("");
-      try {
-        const dur = await inferDurationSeconds(file);
-        setDurationSeconds(dur);
-      } catch {
-        setDurationSeconds(1);
-      }
-      try {
-        const fd = new FormData();
-        fd.set("audio", file);
-        fd.set("language_code", languageCode);
-        const res = await fetch("/api/transcribe", { method: "POST", body: fd });
-        const data = (await res.json().catch(() => ({}))) as {
-          error?: string;
-          transcript?: string;
-          raw_audio_url?: string;
-        };
-        if (!res.ok) throw new Error(data.error || "Transcription failed.");
-        setTranscript((data.transcript || "").trim());
-        setAudioUrl(typeof data.raw_audio_url === "string" ? data.raw_audio_url.trim() || null : null);
-        if (!data.raw_audio_url) throw new Error("Upload did not return an audio URL.");
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Transcription failed.");
-        setAudioFileLabel(null);
-      } finally {
-        setTranscribing(false);
-      }
-    },
-    [languageCode]
-  );
+  const languageDisplayName = useMemo(() => {
+    if (languageDisplayNameProp?.trim()) return languageDisplayNameProp.trim();
+    const code = languageCode.trim().toLowerCase();
+    const hit = languages.find((l) => l.code.trim().toLowerCase() === code);
+    return hit?.name?.trim() || languageCode.trim().toUpperCase() || "this language";
+  }, [languageDisplayNameProp, languages, languageCode]);
 
   useEffect(() => {
+    let m = true;
+    void fetch("/api/languages", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((json) => {
+        if (m && Array.isArray(json)) setLanguages(json as Language[]);
+      })
+      .catch(() => {});
     return () => {
-      if (recordIntervalRef.current) window.clearInterval(recordIntervalRef.current);
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      const rec = mediaRecorderRef.current;
-      if (rec && rec.state !== "inactive") {
-        try {
-          rec.stop();
-        } catch {
-          /* ignore */
-        }
-      }
+      m = false;
     };
   }, []);
 
-  const stopRecordTimer = () => {
-    if (recordIntervalRef.current) {
-      window.clearInterval(recordIntervalRef.current);
-      recordIntervalRef.current = null;
+  const {
+    transcribing,
+    transcribeProgress,
+    transcribePhaseLabel,
+    transcript,
+    setTranscript,
+    audioUrl,
+    audioFileLabel,
+    audioOnlyInfo,
+    error: transcribeError,
+    isRecording,
+    recordElapsedSec,
+    processAudioFile,
+    startRecording,
+    stopRecording,
+    cancelRecording,
+    resetAudio,
+    durationSeconds,
+  } = useAudioTranscription(languageCode);
+
+  useEffect(() => {
+    const t = transcript.trim();
+    if (!t) {
+      setSuggestedWords([]);
+      return;
     }
-  };
-
-  const startRecording = async () => {
-    if (transcribing || busy || isRecording) return;
-    setError(null);
-    discardRecordingRef.current = false;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      chunksRef.current = [];
-
-      const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
-      const mimeType = candidates.find((t) => MediaRecorder.isTypeSupported(t)) || "";
-      const rec = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-
-      rec.ondataavailable = (ev) => {
-        if (ev.data.size > 0) chunksRef.current.push(ev.data);
-      };
-
-      rec.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop());
-        streamRef.current = null;
-        mediaRecorderRef.current = null;
-        setIsRecording(false);
-        stopRecordTimer();
-
-        if (discardRecordingRef.current) {
-          discardRecordingRef.current = false;
-          return;
-        }
-
-        const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
-        const ext = blob.type.includes("webm") ? "webm" : "m4a";
-        const file = new File([blob], `recording.${ext}`, { type: blob.type || "audio/webm" });
-        void processAudioFile(file, "Recorded in browser");
-      };
-
-      mediaRecorderRef.current = rec;
-      rec.start(250);
-      setIsRecording(true);
-      recordStartedAtRef.current = Date.now();
-      setRecordElapsedSec(0);
-      recordIntervalRef.current = window.setInterval(() => {
-        setRecordElapsedSec(Math.floor((Date.now() - recordStartedAtRef.current) / 1000));
-      }, 300);
-    } catch {
-      setError("Could not access the microphone. Check browser permissions.");
-    }
-  };
-
-  const stopRecording = () => {
-    discardRecordingRef.current = false;
-    const rec = mediaRecorderRef.current;
-    if (rec && rec.state !== "inactive") rec.stop();
-  };
-
-  const cancelRecording = () => {
-    discardRecordingRef.current = true;
-    const rec = mediaRecorderRef.current;
-    if (rec && rec.state !== "inactive") rec.stop();
-    else {
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-      setIsRecording(false);
-      stopRecordTimer();
-      discardRecordingRef.current = false;
-    }
-  };
+    let cancelled = false;
+    setKeywordsLoading(true);
+    void (async () => {
+      try {
+        const words = await suggestKeywordsFromTranscript(t, languageCode, languageDisplayName);
+        if (!cancelled) setSuggestedWords(words);
+      } catch {
+        if (!cancelled) setSuggestedWords([]);
+      } finally {
+        if (!cancelled) setKeywordsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [transcript, languageCode, languageDisplayName]);
 
   const onFileChosen = async (file: File | null) => {
     if (!file) {
-      setAudioUrl(null);
+      resetAudio();
       setTranscript("");
-      setAudioFileLabel(null);
       return;
     }
     await processAudioFile(file, file.name);
   };
 
+  const appendTag = (w: string) => {
+    setTags((prev) => {
+      const parts = prev.split(",").map((s) => s.trim()).filter(Boolean);
+      if (parts.some((p) => p.toLowerCase() === w.toLowerCase())) return prev;
+      return [...parts, w].join(", ");
+    });
+  };
+
   const submit = async () => {
     if (!audioUrl) {
-      setError("Add a recording and wait for transcription to finish.");
+      setError("Add a recording and wait for upload to finish (transcript can be typed if Whisper did not return text).");
       return;
     }
     setBusy(true);
@@ -228,8 +129,10 @@ export default function StoryComposer({
         body: JSON.stringify({
           language_code: languageCode,
           title: title.trim(),
-          description: description.trim(),
-          transcript,
+          description:
+            description.trim() ||
+            (transcript.trim() ? transcript.trim().slice(0, 200) : "Audio story from the community archive."),
+          transcript: transcript.trim(),
           duration_seconds: durationSeconds,
           tags: tagList,
           audio_url: audioUrl,
@@ -242,10 +145,9 @@ export default function StoryComposer({
       setTitle("");
       setDescription("");
       setTags("");
-      setAudioUrl(null);
+      resetAudio();
       setTranscript("");
-      setAudioFileLabel(null);
-      setDurationSeconds(1);
+      setSuggestedWords([]);
       await onCreated();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed.");
@@ -255,12 +157,13 @@ export default function StoryComposer({
   };
 
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  const combinedError = error || transcribeError;
 
   return (
     <Card className="space-y-3 bg-[#F5F3EE] p-5">
       <p className="text-xs uppercase tracking-[0.2em] text-[#737973]">Add a storytelling recording</p>
       <p className="text-[11px] leading-relaxed text-[#757C76]">
-        Record in your browser here, or upload a file. Audio is transcribed with Whisper.
+        Record or upload audio — same Whisper step as Dictionary contributions. Transcript is editable. After text exists, we run the Dictionary keyword extract (`/api/extract`) so you can add chips as tags.
         {translationsLocked
           ? " Dictionary English glosses for stories stay locked until this language reaches full archive mode."
           : " The English panel comes from your archive dictionary."}
@@ -317,22 +220,54 @@ export default function StoryComposer({
         </div>
       </div>
 
-      {audioFileLabel ? (
+      {transcribing ? (
+        <TranscriptionProgressBar percent={transcribeProgress} phaseLabel={transcribePhaseLabel} />
+      ) : null}
+      {audioFileLabel && !transcribing ? (
         <p className="text-[11px] text-[#757C76]">
-          {transcribing ? "Transcribing…" : audioUrl ? `${audioFileLabel} · ~${durationSeconds}s` : "Processing failed — try again"}
+          {audioUrl ? `${audioFileLabel} · ~${durationSeconds}s` : "Processing failed — try again"}
         </p>
       ) : null}
+      {audioOnlyInfo ? (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-950">{audioOnlyInfo}</p>
+      ) : null}
 
-      {transcript !== "" ? (
+      {audioUrl ? (
+        <div className="space-y-2">
+          <label className="text-[11px] uppercase tracking-[0.12em] text-[#757C76]">Transcript</label>
+          <Textarea
+            rows={5}
+            value={transcript}
+            onChange={(e) => setTranscript(e.target.value)}
+            placeholder="Whisper fills this when supported; otherwise type what was said."
+            className="bg-[#FBF9F4] font-serif text-sm leading-relaxed text-[#1B1C19]"
+          />
+        </div>
+      ) : null}
+
+      {suggestedWords.length > 0 || keywordsLoading ? (
         <div className="rounded-lg border border-[#C3C8C1]/35 bg-[#FBF9F4] p-3">
-          <p className="text-[11px] uppercase tracking-[0.12em] text-[#757C76]">Transcript (auto)</p>
-          <p className="mt-1 whitespace-pre-wrap font-serif text-sm leading-relaxed text-[#1B1C19]">{transcript}</p>
+          <p className="text-[11px] uppercase tracking-[0.12em] text-[#757C76]">
+            Suggested tags from transcript {keywordsLoading ? "(loading…)" : ""}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {suggestedWords.map((w) => (
+              <button
+                key={w}
+                type="button"
+                className="rounded-full border border-[#C3C8C1]/60 bg-[#F5F3EE] px-3 py-1 text-xs text-[#1B3022] hover:border-[#1B3022]/40"
+                onClick={() => appendTag(w)}
+              >
+                + {w}
+              </button>
+            ))}
+          </div>
         </div>
       ) : null}
 
       <Input placeholder="Tags, comma-separated" value={tags} onChange={(e) => setTags(e.target.value)} className="bg-[#FBF9F4]" />
 
-      {error ? <p className="text-xs text-rose-700">{error}</p> : null}
+      {combinedError ? <p className="text-xs text-rose-700">{combinedError}</p> : null}
       <Button
         type="button"
         className="bg-[#1B3022]"

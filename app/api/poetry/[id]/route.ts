@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDocument, putDocument } from "@/lib/cloudant";
 import { getSessionFromCookie } from "@/lib/auth";
+import { glossaryTranslationForLanguage } from "@/lib/dictionaryTranslate";
+import { languageIsArchiveMode } from "@/lib/languageArchive";
 import { isEnvModerator } from "@/lib/moderator";
 import type { Poem } from "@/lib/types";
 
@@ -27,6 +29,52 @@ export async function DELETE(
     const updated = await putDocument("poetry", id, {
       ...raw,
       status: "removed",
+    });
+    return NextResponse.json({ ok: true, updated });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "failed" },
+      { status: 500 }
+    );
+  }
+}
+
+/** Re-run dictionary gloss against the latest Dictionary entries (author or moderator). */
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    let body: Record<string, unknown> = {};
+    try {
+      body = (await req.json()) as Record<string, unknown>;
+    } catch {
+      /* empty body */
+    }
+    if (body.refresh_gloss !== true) {
+      return NextResponse.json({ error: "Set refresh_gloss: true to recompute the glossary line." }, { status: 400 });
+    }
+
+    const viewer = await getSessionFromCookie();
+    if (!viewer) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const raw = await getDocument("poetry", id);
+    if (!raw || typeof raw._rev !== "string") {
+      return NextResponse.json({ error: "Poem not found" }, { status: 404 });
+    }
+
+    const poem = raw as unknown as Poem;
+    const owns =
+      typeof poem.author_id === "string" && poem.author_id.length > 0 && poem.author_id === viewer.userId;
+    const mod = canModerate(viewer.role, viewer.userId);
+    if (!owns && !mod) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const archive = await languageIsArchiveMode(poem.language_code);
+    const body_translation = archive ? "" : await glossaryTranslationForLanguage(poem.language_code, poem.body_original);
+
+    const updated = await putDocument("poetry", id, {
+      ...raw,
+      body_translation,
     });
     return NextResponse.json({ ok: true, updated });
   } catch (error) {

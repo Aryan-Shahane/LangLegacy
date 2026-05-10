@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import AudioRecorder from "@/components/AudioRecorder";
+import TranscriptionProgressBar from "@/components/community/TranscriptionProgressBar";
+import { postTranscribeWithProgress } from "@/components/community/transcribeWithProgress";
 import type { ExtractedEntry } from "@/lib/types";
 
-type Step = "record" | "uploading_audio" | "transcribing" | "extracting" | "review" | "done";
+type Step = "record" | "transcribing" | "extracting" | "review" | "done";
 
 function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -48,6 +50,8 @@ export default function CommunityRecordingFlow({
   const [savingIndices, setSavingIndices] = useState<Set<number>>(new Set());
   const [publishedIndices, setPublishedIndices] = useState<Set<number>>(new Set());
   const [audioOnlyInfo, setAudioOnlyInfo] = useState<string | null>(null);
+  const [transcribeProgress, setTranscribeProgress] = useState(0);
+  const [transcribePhaseLabel, setTranscribePhaseLabel] = useState("");
 
   const reset = () => {
     setStep("record");
@@ -65,23 +69,29 @@ export default function CommunityRecordingFlow({
     setRecordingBlob(blob);
     setError(null);
     setAudioOnlyInfo(null);
-    setStep("uploading_audio");
+    setStep("transcribing");
+    setTranscribeProgress(0);
+    setTranscribePhaseLabel("");
 
     const fd = new FormData();
     const file = blob instanceof File ? blob : new File([blob], "recording.webm", { type: blob.type || "audio/webm" });
     fd.append("audio", file);
     fd.append("language_code", languageCode);
 
-    setStep("transcribing");
-    const transcribeRes = await fetch("/api/transcribe", { method: "POST", body: fd });
-    const transcribeJson = (await transcribeRes.json()) as {
+    const { ok, body } = await postTranscribeWithProgress(fd, (pct, label) => {
+      setTranscribeProgress(pct);
+      setTranscribePhaseLabel(label);
+    });
+    const transcribeJson = body as {
       transcript?: string;
       error?: string;
       audio_only?: boolean;
       audio_only_reason?: string;
     };
-    if (!transcribeRes.ok) {
-      setError(transcribeJson.error || "Transcription server unavailable.");
+    setTranscribeProgress(0);
+    setTranscribePhaseLabel("");
+    if (!ok) {
+      setError(typeof transcribeJson.error === "string" ? transcribeJson.error : "Transcription server unavailable.");
       setStep("record");
       return;
     }
@@ -141,10 +151,13 @@ export default function CommunityRecordingFlow({
 
     // Always append the entire audio segment as a final archival entry
     extractedDrafts.push({
-      ...emptyEntry(),
       word: `Audio Archive ${new Date().toLocaleDateString()}`,
       translation: "Complete Audio Segment",
       definition: `Full Transcript: ${text}`,
+      phonetic: "",
+      part_of_speech: "other",
+      example_sentence: "",
+      example_translation: "",
     });
 
     setDrafts(extractedDrafts);
@@ -230,10 +243,16 @@ export default function CommunityRecordingFlow({
         <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 shadow-sm">{error}</p>
       ) : null}
 
-      {step === "uploading_audio" || step === "transcribing" || step === "extracting" ? (
-        <div className="rounded-xl border border-[#C3C8C1]/50 bg-white p-6 text-sm text-[#434843] shadow-sm flex items-center gap-3">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#B24A2D] border-r-transparent" />
-          {step === "uploading_audio" ? "Uploading file..." : step === "transcribing" ? "Transcribing speech..." : "Extracting vocabulary..."}
+      {step === "transcribing" ? (
+        <TranscriptionProgressBar percent={transcribeProgress} phaseLabel={transcribePhaseLabel} />
+      ) : null}
+      {step === "extracting" ? (
+        <div className="flex flex-col gap-3 rounded-xl border border-[#C3C8C1]/50 bg-white p-6 text-sm text-[#434843] shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#B24A2D] border-r-transparent" />
+            Extracting vocabulary…
+          </div>
+          <p className="text-[11px] text-[#757C76]">Running dictionary keyword extraction on your transcript.</p>
         </div>
       ) : null}
 

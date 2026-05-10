@@ -31,12 +31,16 @@ def _load_model():
         raise HTTPException(status_code=503, detail="faster-whisper is not installed in this Python environment.")
 
     if _model_cache is None:
-        # small default; override with MODEL_SIZE=something from faster-whisper presets
+        # Defaults favor CPU: `device=auto` often picks CUDA and then fails on machines
+        # without a full CUDA/cuBLAS stack (e.g. cublas64_12.dll missing on Windows).
         import os
 
         size = os.environ.get("WHISPER_MODEL_SIZE", "small")
-        device = os.environ.get("WHISPER_DEVICE", "auto")
-        compute_type = os.environ.get("WHISPER_COMPUTE", "auto")
+        device = (os.environ.get("WHISPER_DEVICE") or "cpu").strip()
+        compute_type = (os.environ.get("WHISPER_COMPUTE") or "").strip()
+        if not compute_type or compute_type == "auto":
+            compute_type = "int8" if device.lower() == "cpu" else "float16"
+        print(f"[whisper_server] model={size!r} device={device!r} compute_type={compute_type!r}", flush=True)
         _model_cache = WhisperModel(size, device=device, compute_type=compute_type)
     return _model_cache
 
@@ -87,6 +91,8 @@ async def transcribe(audio: UploadFile = File(...), language_code: str = Form(""
 
 
 if __name__ == "__main__":
+    import os
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("WHISPER_PORT", "8000"))
+    uvicorn.run(app, host="0.0.0.0", port=port)

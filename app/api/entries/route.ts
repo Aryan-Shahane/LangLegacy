@@ -2,75 +2,12 @@ import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { findDocuments, saveDocument } from "@/lib/cloudant";
 import { coerceEntry } from "@/lib/entryCoercion";
+import { mangoLanguageCodeMatch } from "@/lib/dictionaryTranslate";
+import { getFallbackDictionaryEntries } from "@/lib/fallbackDictionaryEntries";
 import type { Entry } from "@/lib/types";
 import { getSessionFromCookie } from "@/lib/auth";
 import { recomputeLanguageCoverage } from "@/lib/languageCoverage";
 import { uploadAudio } from "@/lib/cos";
-
-const FALLBACK_ENTRIES: Record<string, Entry[]> = {
-  mi: [
-    {
-      _id: "m1",
-      type: "entry",
-      language_code: "mi",
-      word: "Kia ora",
-      translation: "Hello / Thank you / Cheers",
-      definition: "A Māori greeting with a variety of meanings.",
-      audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
-      contributor_id: "system",
-      contributor_name: "Archive",
-      report_count: 0,
-      status: "active",
-      created_at: new Date().toISOString(),
-    },
-    {
-      _id: "m2",
-      type: "entry",
-      language_code: "mi",
-      word: "Aotearoa",
-      translation: "New Zealand",
-      definition: "The Māori name for New Zealand, literally 'Land of the Long White Cloud'.",
-      audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",
-      contributor_id: "system",
-      contributor_name: "Archive",
-      report_count: 0,
-      status: "active",
-      created_at: new Date().toISOString(),
-    },
-  ],
-  cy: [
-    {
-      _id: "c1",
-      type: "entry",
-      language_code: "cy",
-      word: "Hiraeth",
-      translation: "Longing / Homesickness",
-      definition: "A deep longing for a home, place or time that you can't return to.",
-      audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
-      contributor_id: "system",
-      contributor_name: "Archive",
-      report_count: 0,
-      status: "active",
-      created_at: new Date().toISOString(),
-    },
-  ],
-  kw: [
-    {
-      _id: "k1",
-      type: "entry",
-      language_code: "kw",
-      word: "Kernow",
-      translation: "Cornwall",
-      definition: "The Cornish name for the county of Cornwall.",
-      audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3",
-      contributor_id: "system",
-      contributor_name: "Archive",
-      report_count: 0,
-      status: "active",
-      created_at: new Date().toISOString(),
-    },
-  ],
-};
 
 export async function GET(req: NextRequest) {
   try {
@@ -85,7 +22,7 @@ export async function GET(req: NextRequest) {
 
     const baseAnd: Record<string, unknown>[] = [
       { type: "entry" },
-      { language_code: languageCode },
+      mangoLanguageCodeMatch(languageCode),
       { $or: [{ status: { $exists: false } }, { status: "active" }, { status: "under_review" }] },
     ];
 
@@ -102,14 +39,20 @@ export async function GET(req: NextRequest) {
         string,
         unknown
       >[];
-      if (docs.length === 0 && !q && offset === 0 && FALLBACK_ENTRIES[languageCode]) {
-        return NextResponse.json(FALLBACK_ENTRIES[languageCode]);
+      const fallbackSlice = getFallbackDictionaryEntries(languageCode);
+      if (docs.length === 0 && !q && offset === 0 && fallbackSlice.length > 0) {
+        return NextResponse.json(fallbackSlice);
       }
       return NextResponse.json(docs.map(coerceEntry));
     } catch (findErr) {
       const message = findErr instanceof Error ? findErr.message : "";
-      if ((message.includes("401") || message.includes("Missing Cloudant credentials")) && !q && offset === 0 && FALLBACK_ENTRIES[languageCode]) {
-        return NextResponse.json(FALLBACK_ENTRIES[languageCode]);
+      if (
+        (message.includes("401") || message.includes("Missing Cloudant credentials")) &&
+        !q &&
+        offset === 0 &&
+        getFallbackDictionaryEntries(languageCode).length > 0
+      ) {
+        return NextResponse.json(getFallbackDictionaryEntries(languageCode));
       }
       throw findErr;
     }
@@ -129,7 +72,7 @@ export async function POST(req: NextRequest) {
     const contributor_name = session?.name ?? null;
 
     const wordProbe = String(body.word || "").trim();
-    const language_code = String(body.language_code || "");
+    const language_code = String(body.language_code || "").trim().toLowerCase();
 
     if (body.duplicate_probe === true || body.duplicate_probe === "true") {
       if (!language_code || !wordProbe) {
@@ -137,7 +80,7 @@ export async function POST(req: NextRequest) {
       }
       const dupAnd: Record<string, unknown>[] = [
         { type: "entry" },
-        { language_code },
+        mangoLanguageCodeMatch(language_code),
         { $or: [{ status: { $exists: false } }, { status: "active" }, { status: "under_review" }] },
       ];
       const esc = wordProbe.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
