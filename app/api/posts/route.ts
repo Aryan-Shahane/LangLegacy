@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { findDocuments, getDocument, saveDocument } from "@/lib/cloudant";
 import { requireSession } from "@/lib/auth";
 import { normalizeForumPost } from "@/lib/forumCoerce";
+import { mockForumPostsForLanguage } from "@/lib/mock/forumMockData";
 import type { Post } from "@/lib/types";
 
 function isForumDoc(doc: Record<string, unknown>): boolean {
@@ -42,15 +43,24 @@ export async function GET(req: NextRequest) {
     if (section !== "forum") {
       return NextResponse.json({ error: "unsupported section" }, { status: 400 });
     }
-    const docsRaw = await findDocuments(
-      "posts",
-      { type: "post", language_code: languageCode, status: "active" },
-      500,
-      0
-    );
-    const posts = docsRaw
+    let docsRaw: Record<string, unknown>[] = [];
+    try {
+      docsRaw = (await findDocuments(
+        "posts",
+        { type: "post", language_code: languageCode, status: "active" },
+        500,
+        0
+      )) as Record<string, unknown>[];
+    } catch (dbError) {
+      console.warn("Forum posts Cloudant query failed — using bundled demo threads.", dbError);
+    }
+
+    let posts = docsRaw
       .filter((d): d is Record<string, unknown> => typeof d === "object" && d !== null && isForumDoc(d as Record<string, unknown>))
       .map((d) => normalizeForumPost(d));
+    if (posts.length === 0) {
+      posts = mockForumPostsForLanguage(languageCode);
+    }
     posts.sort((a, b) => b.created_at.localeCompare(a.created_at));
     return NextResponse.json(posts);
   } catch (error) {

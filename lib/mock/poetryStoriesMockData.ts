@@ -410,7 +410,7 @@ export const MOCK_POEMS: Poem[] = [
 
 export const MOCK_STORIES: Story[] = [
   {
-    _id: "20000000-0000-4000-8000-00000000010",
+    _id: "20000000-0000-4000-8000-000000000101",
     type: "story",
     language_code: "mi",
     title: "Mock Story 0",
@@ -427,7 +427,7 @@ export const MOCK_STORIES: Story[] = [
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
-    _id: "20000000-0000-4000-8000-00000000010",
+    _id: "20000000-0000-4000-8000-000000000102",
     type: "story",
     language_code: "cy",
     title: "Mock Story 1",
@@ -444,7 +444,7 @@ export const MOCK_STORIES: Story[] = [
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
-    _id: "20000000-0000-4000-8000-00000000010",
+    _id: "20000000-0000-4000-8000-000000000103",
     type: "story",
     language_code: "kw",
     title: "Mock Story 2",
@@ -461,7 +461,7 @@ export const MOCK_STORIES: Story[] = [
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
-    _id: "20000000-0000-4000-8000-00000000010",
+    _id: "20000000-0000-4000-8000-000000000104",
     type: "story",
     language_code: "gam",
     title: "Mock Story 3",
@@ -478,7 +478,7 @@ export const MOCK_STORIES: Story[] = [
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
-    _id: "20000000-0000-4000-8000-00000000010",
+    _id: "20000000-0000-4000-8000-000000000105",
     type: "story",
     language_code: "oj",
     title: "Mock Story 4",
@@ -495,7 +495,7 @@ export const MOCK_STORIES: Story[] = [
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
-    _id: "20000000-0000-4000-8000-00000000010",
+    _id: "20000000-0000-4000-8000-000000000106",
     type: "story",
     language_code: "mi",
     title: "Mock Story 5",
@@ -512,7 +512,7 @@ export const MOCK_STORIES: Story[] = [
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
-    _id: "20000000-0000-4000-8000-00000000010",
+    _id: "20000000-0000-4000-8000-000000000107",
     type: "story",
     language_code: "cy",
     title: "Mock Story 6",
@@ -529,7 +529,7 @@ export const MOCK_STORIES: Story[] = [
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
-    _id: "20000000-0000-4000-8000-00000000010",
+    _id: "20000000-0000-4000-8000-000000000108",
     type: "story",
     language_code: "kw",
     title: "Mock Story 7",
@@ -546,7 +546,7 @@ export const MOCK_STORIES: Story[] = [
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
-    _id: "20000000-0000-4000-8000-00000000010",
+    _id: "20000000-0000-4000-8000-000000000109",
     type: "story",
     language_code: "gam",
     title: "Mock Story 8",
@@ -563,7 +563,7 @@ export const MOCK_STORIES: Story[] = [
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
-    _id: "20000000-0000-4000-8000-00000000010",
+    _id: "20000000-0000-4000-8000-000000000110",
     type: "story",
     language_code: "oj",
     title: "Mock Story 9",
@@ -580,7 +580,7 @@ export const MOCK_STORIES: Story[] = [
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
-    _id: "20000000-0000-4000-8000-0000000001",
+    _id: "20000000-0000-4000-8000-000000000111",
     type: "story",
     language_code: "mi",
     title: "Mock Story 10",
@@ -597,7 +597,7 @@ export const MOCK_STORIES: Story[] = [
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
-    _id: "20000000-0000-4000-8000-0000000001",
+    _id: "20000000-0000-4000-8000-000000000112",
     type: "story",
     language_code: "cy",
     title: "Mock Story 11",
@@ -614,7 +614,7 @@ export const MOCK_STORIES: Story[] = [
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
-    _id: "20000000-0000-4000-8000-0000000001",
+    _id: "20000000-0000-4000-8000-000000000113",
     type: "story",
     language_code: "kw",
     title: "Mock Story 12",
@@ -631,7 +631,7 @@ export const MOCK_STORIES: Story[] = [
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
-    _id: "20000000-0000-4000-8000-0000000001",
+    _id: "20000000-0000-4000-8000-000000000114",
     type: "story",
     language_code: "gam",
     title: "Mock Story 13",
@@ -648,7 +648,7 @@ export const MOCK_STORIES: Story[] = [
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
-    _id: "20000000-0000-4000-8000-0000000001",
+    _id: "20000000-0000-4000-8000-000000000115",
     type: "story",
     language_code: "oj",
     title: "Mock Story 14",

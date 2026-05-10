@@ -7,6 +7,7 @@ export const MOCK_ROOMS: Room[] = [
     language_code: "mi",
     name: "General Discussion 0",
     description: "A place to practice and chat.",
+    created_by: "demo",
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
@@ -15,6 +16,7 @@ export const MOCK_ROOMS: Room[] = [
     language_code: "cy",
     name: "General Discussion 1",
     description: "A place to practice and chat.",
+    created_by: "demo",
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
@@ -23,6 +25,7 @@ export const MOCK_ROOMS: Room[] = [
     language_code: "kw",
     name: "General Discussion 2",
     description: "A place to practice and chat.",
+    created_by: "demo",
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
@@ -31,6 +34,7 @@ export const MOCK_ROOMS: Room[] = [
     language_code: "gam",
     name: "General Discussion 3",
     description: "A place to practice and chat.",
+    created_by: "demo",
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
@@ -39,6 +43,7 @@ export const MOCK_ROOMS: Room[] = [
     language_code: "oj",
     name: "General Discussion 4",
     description: "A place to practice and chat.",
+    created_by: "demo",
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
@@ -47,6 +52,7 @@ export const MOCK_ROOMS: Room[] = [
     language_code: "mi",
     name: "General Discussion 5",
     description: "A place to practice and chat.",
+    created_by: "demo",
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
@@ -55,6 +61,7 @@ export const MOCK_ROOMS: Room[] = [
     language_code: "cy",
     name: "General Discussion 6",
     description: "A place to practice and chat.",
+    created_by: "demo",
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
@@ -63,6 +70,7 @@ export const MOCK_ROOMS: Room[] = [
     language_code: "kw",
     name: "General Discussion 7",
     description: "A place to practice and chat.",
+    created_by: "demo",
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
@@ -71,6 +79,7 @@ export const MOCK_ROOMS: Room[] = [
     language_code: "gam",
     name: "General Discussion 8",
     description: "A place to practice and chat.",
+    created_by: "demo",
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
@@ -79,6 +88,7 @@ export const MOCK_ROOMS: Room[] = [
     language_code: "oj",
     name: "General Discussion 9",
     description: "A place to practice and chat.",
+    created_by: "demo",
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
@@ -87,6 +97,7 @@ export const MOCK_ROOMS: Room[] = [
     language_code: "mi",
     name: "General Discussion 10",
     description: "A place to practice and chat.",
+    created_by: "demo",
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
@@ -95,6 +106,7 @@ export const MOCK_ROOMS: Room[] = [
     language_code: "cy",
     name: "General Discussion 11",
     description: "A place to practice and chat.",
+    created_by: "demo",
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
@@ -103,6 +115,7 @@ export const MOCK_ROOMS: Room[] = [
     language_code: "kw",
     name: "General Discussion 12",
     description: "A place to practice and chat.",
+    created_by: "demo",
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
@@ -111,6 +124,7 @@ export const MOCK_ROOMS: Room[] = [
     language_code: "gam",
     name: "General Discussion 13",
     description: "A place to practice and chat.",
+    created_by: "demo",
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
@@ -119,6 +133,7 @@ export const MOCK_ROOMS: Room[] = [
     language_code: "oj",
     name: "General Discussion 14",
     description: "A place to practice and chat.",
+    created_by: "demo",
     created_at: "2026-05-10T10:00:00.000Z",
   },
   {
@@ -441,3 +456,62 @@ export const MOCK_MESSAGES: Record<string, Message[]> = {
     }
   ],
 };
+
+/**
+ * Infer archive language_code from common room `_id` patterns (e.g. room_mi_general, room-navajo-foo broken — best-effort).
+ */
+export function inferLanguageFromRoomId(roomId: string): string | null {
+  const fromDb = MOCK_ROOMS.find((r) => r._id === roomId);
+  if (fromDb?.language_code) return fromDb.language_code;
+
+  let m = /^room_([^_]+)_general$/i.exec(roomId);
+  if (m) return m[1];
+
+  m = /^room_([a-z0-9]+)_/i.exec(roomId);
+  if (m) return m[1];
+
+  return null;
+}
+
+/** Richer placeholder chat until Cloudant fills the thread */
+export function demoMessagesForRoom(roomId: string, languageHint: string): Message[] {
+  const lcRaw = inferLanguageFromRoomId(roomId) || languageHint || "en";
+  const lc = lcRaw.trim().toLowerCase();
+  const stamp = Math.abs(roomId.replace(/\W+/g, "").length + lc.charCodeAt(0));
+
+  const at = (min: number, sec: number) =>
+    `2026-05-07T${String((17 + min) % 24).padStart(2, "0")}:${String((30 + sec + stamp) % 60).padStart(2, "0")}:00.000Z`;
+
+  const mk = (
+    suf: string,
+    author_name: string,
+    body: string,
+    iso: string
+  ): Message => ({
+    _id: `msg_demo_${roomId.replace(/\W+/g, "_").slice(0, 42)}_${suf}`,
+    type: "message",
+    room_id: roomId,
+    language_code: lc,
+    author_id: `demo_${suf}`,
+    author_name,
+    body,
+    report_count: 0,
+    status: "active",
+    created_at: iso,
+  });
+
+  return [
+    mk("a", "Nova Lang", `Kickoff ping for this circle (${lc}). Who’s practising tones tonight?`, at(0, 8)),
+    mk("b", "River Māori", `I’ll share a Whisper clip shortly — elders asked for louder vowels 🔊`, at(0, 14)),
+    mk("c", "Mod shadow", `Flag anything off-tone; we reconcile with moderator queue nightly.`, at(0, 31)),
+    mk("d", "Youth learner", `Dictionary gloss refresher: IPA “Pronounce” uses Google SSML phoneme tiles. Pretty rad.`, at(1, 2)),
+    mk("e", "Teina W.", `Thread stays kind — bilingual side-notes welcome in parentheses.`, at(1, 19)),
+    mk("f", "Archive bot", `[demo] Persisted transcripts land in Cloudant when credentials are wired.`, at(1, 44)),
+    mk(
+      "g",
+      "Kiri P.",
+      `Quick roll call: timezone + proficiency (beginner/intermediate/advanced). Drop yours below 👇`,
+      at(2, 11)
+    ),
+  ];
+}

@@ -34,7 +34,9 @@ export default function ChatRoom({
 
   const loadInitial = async () => {
     try {
-      const res = await fetch(`/api/rooms/${room._id}/messages`);
+      const res = await fetch(
+        `/api/rooms/${encodeURIComponent(room._id)}/messages?language_code=${encodeURIComponent(languageCode)}`
+      );
       if (!res.ok) return;
       const data = (await res.json()) as Message[];
       setMessages(data);

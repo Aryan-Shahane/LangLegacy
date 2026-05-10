@@ -5,7 +5,11 @@ import { requireSession } from "@/lib/auth";
 import { coerceMessage } from "@/lib/messageCoercion";
 import type { Message } from "@/lib/types";
 import { broadcast } from "@/lib/streamManager";
-import { MOCK_MESSAGES } from "@/lib/mock/chatroomMockData";
+import {
+  MOCK_MESSAGES,
+  demoMessagesForRoom,
+  inferLanguageFromRoomId,
+} from "@/lib/mock/chatroomMockData";
 
 export async function GET(
   req: NextRequest,
@@ -13,8 +17,15 @@ export async function GET(
 ) {
   try {
     const { roomId } = await params;
+    const qpLang =
+      req.nextUrl.searchParams.get("language_code")?.trim().toLowerCase() || "";
+    const langHint =
+      qpLang ||
+      inferLanguageFromRoomId(roomId) ||
+      "en";
+
     let docs: Message[] = [];
-    
+
     try {
       docs = (await findDocuments(
         "messages",
@@ -23,8 +34,16 @@ export async function GET(
         0
       )) as Message[];
     } catch (dbError) {
-      console.warn("Cloudant unreachable, falling back to mock messages");
-      docs = MOCK_MESSAGES[roomId] || [];
+      console.warn("Cloudant unreachable, attempting bundled chat demo lines", dbError);
+      docs = [];
+    }
+
+    if (docs.length === 0) {
+      const seeded = MOCK_MESSAGES[roomId];
+      docs =
+        seeded && seeded.length > 0
+          ? seeded
+          : demoMessagesForRoom(roomId, langHint);
     }
 
     const normalized = (docs as unknown as Record<string, unknown>[]).map((d) => coerceMessage(d));
