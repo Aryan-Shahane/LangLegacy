@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { findDocuments, saveDocument } from "@/lib/cloudant";
 import { requireSession } from "@/lib/auth";
-import { glossaryTranslationForLanguage } from "@/lib/dictionaryTranslate";
+import { translateTextWithAI } from "@/lib/featherless";
 import { languageIsArchiveMode } from "@/lib/languageArchive";
 import { mockPoemsForLanguage } from "@/lib/mock/poetryStoriesMockData";
 import type { Poem } from "@/lib/types";
@@ -52,7 +52,14 @@ export async function POST(req: NextRequest) {
       );
     }
     const archive = await languageIsArchiveMode(language_code);
-    const body_translation = archive ? "" : await glossaryTranslationForLanguage(language_code, body_original);
+    let body_translation = "";
+    if (!archive) {
+      try {
+        body_translation = await translateTextWithAI(body_original, language_code);
+      } catch (e) {
+        console.error("AI translation failed, fallback to empty", e);
+      }
+    }
     const viewer = await requireSession();
     const poem: Poem = {
       _id: randomUUID(),

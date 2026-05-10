@@ -21,13 +21,23 @@ export default function FlashCard({
   const { toggle, hasAudio } = useExclusivePlayback(entry.audio_url);
 
   useEffect(() => {
-    if (flipped && hasAudio && entry.audio_url) {
-      const t = window.setTimeout(() => toggle(), 120);
-      return () => window.clearTimeout(t);
+    if (flipped) {
+      if (hasAudio && entry.audio_url && entry.word.startsWith("Audio Archive")) {
+        const t = window.setTimeout(() => toggle(), 120);
+        return () => window.clearTimeout(t);
+      } else {
+        const t = window.setTimeout(() => {
+          const textToSpeak = entry.phonetic || entry.word;
+          const utter = new SpeechSynthesisUtterance(textToSpeak);
+          utter.lang = entry.language_code;
+          window.speechSynthesis.speak(utter);
+        }, 120);
+        return () => window.clearTimeout(t);
+      }
     }
     return undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional one-shot autoplay after flip
-  }, [flipped, hasAudio, entry.audio_url]);
+  }, [flipped, hasAudio, entry.audio_url, entry.word, entry.phonetic, entry.language_code]);
 
   const frontTranslation = entry.translation?.trim() || entry.definition?.trim() || "—";
   const phoneticLine = entry.phonetic?.trim() || "";
@@ -69,7 +79,22 @@ export default function FlashCard({
             <div className="flex flex-1 flex-col justify-center gap-4 text-center">
               <span className="font-serif text-5xl tracking-tight text-[#061B0E]">{entry.word}</span>
               {phoneticLine ? <span className="text-sm italic text-[#757C76]">{phoneticLine}</span> : null}
-              {hasAudio ? <AudioPlayer audio_url={entry.audio_url} /> : null}
+              {(hasAudio && entry.audio_url && entry.word.startsWith("Audio Archive")) ? (
+                <AudioPlayer audio_url={entry.audio_url} />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const textToSpeak = entry.phonetic || entry.word;
+                    const utter = new SpeechSynthesisUtterance(textToSpeak);
+                    utter.lang = entry.language_code;
+                    window.speechSynthesis.speak(utter);
+                  }}
+                  className="mx-auto mt-2 inline-flex w-fit items-center gap-1.5 rounded-full border border-[#C3C8C1]/60 bg-white px-4 py-1.5 text-sm font-semibold text-[#1B3022] hover:bg-[#E5F0E8] transition-colors"
+                >
+                  🔊 Pronounce
+                </button>
+              )}
             </div>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Button

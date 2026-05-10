@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDocument, putDocument } from "@/lib/cloudant";
 import { getSessionFromCookie } from "@/lib/auth";
-import { glossaryTranslationForLanguage } from "@/lib/dictionaryTranslate";
+import { translateTextWithAI } from "@/lib/featherless";
 import { languageIsArchiveMode } from "@/lib/languageArchive";
 import { isEnvModerator } from "@/lib/moderator";
 import type { Poem } from "@/lib/types";
@@ -70,7 +70,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     const archive = await languageIsArchiveMode(poem.language_code);
-    const body_translation = archive ? "" : await glossaryTranslationForLanguage(poem.language_code, poem.body_original);
+    let body_translation = "";
+    if (!archive) {
+      try {
+        body_translation = await translateTextWithAI(poem.body_original, poem.language_code);
+      } catch (e) {
+        console.error("AI translation failed, fallback to empty", e);
+      }
+    }
 
     const updated = await putDocument("poetry", id, {
       ...raw,

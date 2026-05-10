@@ -121,15 +121,15 @@ export default function PoemComposer({
       <p className="text-xs uppercase tracking-[0.2em] text-[#737973]">Share a poem</p>
       <p className="text-[11px] leading-relaxed text-[#757C76]">
         {translationsLocked ? (
-          "This archive is in archive mode — poems stay in the original language here; dictionary English glosses appear after the language graduates to full mode."
+          "This archive is in archive mode — poems stay in the original language here; English translations appear after the language graduates to full mode."
         ) : (
           <>
-            {`After you publish, an English dictionary gloss appears under your poem: each word is swapped only when it matches an entry in this archive (${languageDisplayName}) dictionary (not full-sentence machine translation).`}{" "}
+            {`After you publish, an English translation of your poem will be generated automatically by AI.`}{" "}
             <span className="font-medium text-[#434843]">
               Record or upload audio — we run the same Whisper transcription as the Dictionary upload flow, then suggest vocabulary keywords from your transcript (Dictionary extract pipeline).
             </span>{" "}
-            After you add or change Dictionary entries, open your poem in the list below and use{" "}
-            <span className="font-medium text-[#434843]">Refresh dictionary gloss</span> under the English line to recompute it.
+            If the AI translation misses nuances, open your poem in the list below and use{" "}
+            <span className="font-medium text-[#434843]">Refresh translation</span> under the English line to recompute it.
           </>
         )}
       </p>

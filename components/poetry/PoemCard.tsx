@@ -83,20 +83,18 @@ export default function PoemCard({
         <p className="mb-3 text-[11px] uppercase tracking-[0.12em] text-[#757C76]">{languageDisplayName}</p>
         <p className="font-serif text-lg leading-relaxed text-[#1B1C19] whitespace-pre-wrap">{poem.body_original}</p>
         <div className="mt-4 border-t border-[#C3C8C1]/35 pt-4">
-          <p className="mb-2 text-[11px] uppercase tracking-[0.12em] text-[#757C76]">English (dictionary gloss)</p>
+          <p className="mb-2 text-[11px] uppercase tracking-[0.12em] text-[#757C76]">English (translation)</p>
           {translationsLocked ? (
             <p className="text-sm italic leading-relaxed text-[#757C76]">
-              Locked in archive mode — English glossary lines unlock when translation coverage grows and this language switches to full mode.
+              Locked in archive mode — English translations unlock when translation coverage grows and this language switches to full mode.
             </p>
           ) : (
             <>
               <p className="text-sm leading-relaxed text-[#434843] whitespace-pre-wrap">{poem.body_translation}</p>
               {glossLooksUntranslated ? (
                 <p className="mt-2 text-[11px] leading-relaxed text-[#757C76]">
-                  This panel is a dictionary gloss, not a full translator: each word (or multi-word headword) is replaced only
-                  when it matches an entry in this language&apos;s Dictionary — spelling, hyphens, and apostrophes must line
-                  up. None of these tokens matched yet, so the line is unchanged. Add entries, use the same surface form as
-                  in the poem, then use Refresh dictionary gloss.
+                  This panel shows an AI-generated translation of the poem. If the translation appears missing or incomplete,
+                  you can try refreshing it using the button below.
                 </p>
               ) : null}
               {canRefreshGloss ? (
@@ -109,7 +107,7 @@ export default function PoemCard({
                     disabled={refreshBusy}
                     onClick={() => void refreshGloss()}
                   >
-                    {refreshBusy ? "Refreshing…" : "Refresh dictionary gloss"}
+                    {refreshBusy ? "Refreshing…" : "Refresh translation"}
                   </Button>
                   {refreshErr ? <p className="text-[11px] text-rose-700">{refreshErr}</p> : null}
                 </div>
