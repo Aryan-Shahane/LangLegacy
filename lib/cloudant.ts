@@ -142,17 +142,24 @@ export async function saveDocument(db: string, doc: Json): Promise<Json> {
 }
 
 export async function getDocument(db: string, id: string): Promise<Json | null> {
-  const { base } = cloudantConfig();
-  const res = await cloudantFetch(`${base}/${db}/${encodeURIComponent(id)}`, {
-    cache: "no-store",
-  });
-  if (res.status === 404) {
+  try {
+    const { base } = cloudantConfig();
+    const res = await cloudantFetch(`${base}/${db}/${encodeURIComponent(id)}`, {
+      cache: "no-store",
+    });
+    if (res.status === 404) {
+      return null;
+    }
+    if (!res.ok) {
+      console.warn(`[cloudant] getDocument ${db}/${id} HTTP ${res.status}`);
+      return null;
+    }
+    return (await res.json()) as Json;
+  } catch (err) {
+    // `fetch` throws (e.g. "fetch failed") when the host is unreachable, TLS/DNS fails, or URL is invalid.
+    console.warn(`[cloudant] getDocument ${db}/${id}`, err);
     return null;
   }
-  if (!res.ok) {
-    throw new Error(`Cloudant get document failed: ${res.status}`);
-  }
-  return (await res.json()) as Json;
 }
 
 export async function putDocument(db: string, id: string, doc: Json): Promise<Json> {
