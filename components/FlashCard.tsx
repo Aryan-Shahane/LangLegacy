@@ -29,7 +29,7 @@ export default function FlashCard({
         const t = window.setTimeout(() => {
           const textToSpeak = entry.phonetic || entry.word;
           const utter = new SpeechSynthesisUtterance(textToSpeak);
-          utter.lang = entry.language_code;
+          utter.lang = entry.phonetic ? "en" : entry.language_code;
           window.speechSynthesis.speak(utter);
         }, 120);
         return () => window.clearTimeout(t);
@@ -87,7 +87,7 @@ export default function FlashCard({
                   onClick={() => {
                     const textToSpeak = entry.phonetic || entry.word;
                     const utter = new SpeechSynthesisUtterance(textToSpeak);
-                    utter.lang = entry.language_code;
+                    utter.lang = entry.phonetic ? "en" : entry.language_code;
                     window.speechSynthesis.speak(utter);
                   }}
                   className="mx-auto mt-2 inline-flex w-fit items-center gap-1.5 rounded-full border border-[#C3C8C1]/60 bg-white px-4 py-1.5 text-sm font-semibold text-[#1B3022] hover:bg-[#E5F0E8] transition-colors"

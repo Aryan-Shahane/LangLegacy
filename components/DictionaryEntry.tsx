@@ -31,7 +31,7 @@ export default function DictionaryEntry({
     : "";
 
   const definitionPrimary = entry.definition?.trim() || null;
-  const legacyGloss = [entry.part_of_speech, entry.phonetic].filter(Boolean).join(" · ").trim();
+  const legacyGloss = [entry.part_of_speech].filter(Boolean).join(" · ").trim();
 
   const contributorLabel = entry.contributor_name ? `Contributed by ${entry.contributor_name}` : "Community";
 
@@ -83,6 +83,9 @@ export default function DictionaryEntry({
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#C3C8C1]/40 pb-3">
         <div>
           <h3 className="font-serif text-3xl text-[#061B0E]">{entry.word}</h3>
+          {entry.phonetic ? (
+            <p className="mb-1 font-mono text-sm tracking-wide text-[#757C76]">{entry.phonetic}</p>
+          ) : null}
           <p className="text-lg text-[#1B1C19]">{entry.translation}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -164,7 +167,7 @@ export default function DictionaryEntry({
             onClick={() => {
               const textToSpeak = entry.phonetic || entry.word;
               const utter = new SpeechSynthesisUtterance(textToSpeak);
-              utter.lang = entry.language_code;
+              utter.lang = entry.phonetic ? "en" : entry.language_code;
               window.speechSynthesis.speak(utter);
             }}
             className="inline-flex items-center gap-1.5 rounded-full border border-[#C3C8C1]/60 bg-white px-4 py-1.5 text-sm font-semibold text-[#1B3022] hover:bg-[#E5F0E8] transition-colors"
