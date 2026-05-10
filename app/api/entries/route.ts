@@ -157,3 +157,48 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+import { putDocument } from "@/lib/cloudant";
+import { requireModeratorAccess } from "@/lib/auth";
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getSessionFromCookie();
+    if (!session || session.role !== "moderator") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const languageCode = req.nextUrl.searchParams.get("language_code");
+    if (!languageCode) {
+      return NextResponse.json({ error: "language_code is required" }, { status: 400 });
+    }
+
+    // Find all entries for this language
+    const selector: Record<string, unknown> = {
+      $and: [
+        { type: "entry" },
+        mangoLanguageCodeMatch(languageCode),
+      ]
+    };
+
+    const docs = (await findDocuments("entries", selector, 1000, 0)) as Record<string, unknown>[];
+
+    let deletedCount = 0;
+    for (const doc of docs) {
+      if (typeof doc._id === "string") {
+        const merged = { ...doc, type: "deleted_entry", deleted_at: new Date().toISOString() };
+        await putDocument("entries", doc._id, merged);
+        deletedCount++;
+      }
+    }
+
+    await recomputeLanguageCoverage(languageCode);
+
+    return NextResponse.json({ ok: true, deletedCount });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to clear entries" },
+      { status: 500 }
+    );
+  }
+}

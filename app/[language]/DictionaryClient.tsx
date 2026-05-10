@@ -96,15 +96,35 @@ export default function DictionaryClient({ languageCode }: { languageCode: strin
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-serif text-2xl text-[#061B0E]">Dictionary entries</h2>
-        <Link
-          href={`/${languageCode}/contribute`}
-          className={cn(
-            "inline-flex items-center justify-center rounded-full bg-[#1B3022] px-5 py-2 text-sm font-semibold text-[#FBF9F4] transition hover:bg-[#061B0E]",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9F4026]/40"
+        <div className="flex items-center gap-3">
+          {canModerate && entries.length > 0 && (
+            <button
+              type="button"
+              onClick={async () => {
+                if (!confirm("Are you sure you want to delete ALL entries for this language? This cannot be undone.")) return;
+                try {
+                  const res = await fetch(`/api/entries?language_code=${languageCode}`, { method: "DELETE" });
+                  if (!res.ok) throw new Error("Failed to clear entries");
+                  void resetAndLoadFirst();
+                } catch (e) {
+                  alert("Could not clear entries.");
+                }
+              }}
+              className="inline-flex items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-5 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/40"
+            >
+              Clear All Entries
+            </button>
           )}
-        >
-          + Contribute Recording
-        </Link>
+          <Link
+            href={`/${languageCode}/contribute`}
+            className={cn(
+              "inline-flex items-center justify-center rounded-full bg-[#1B3022] px-5 py-2 text-sm font-semibold text-[#FBF9F4] transition hover:bg-[#061B0E]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9F4026]/40"
+            )}
+          >
+            + Contribute Recording
+          </Link>
+        </div>
       </div>
 
       <SearchBar

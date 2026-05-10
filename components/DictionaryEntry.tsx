@@ -156,7 +156,7 @@ export default function DictionaryEntry({
       ) : null}
 
       <div className="flex flex-wrap items-center gap-3">
-        {entry.audio_url ? (
+        {(entry.audio_url && entry.word.startsWith("Audio Archive")) ? (
           <AudioPlayer audio_url={entry.audio_url} />
         ) : (
           <button
