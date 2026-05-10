@@ -22,6 +22,7 @@ export default function DictionaryEntry({
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [patchError, setPatchError] = useState<string | null>(null);
+  const [loadingTTS, setLoadingTTS] = useState(false);
 
   const created = entry.created_at
     ? new Date(entry.created_at).toLocaleString(undefined, {
@@ -164,15 +165,29 @@ export default function DictionaryEntry({
         ) : (
           <button
             type="button"
+            disabled={loadingTTS}
             onClick={() => {
-              const textToSpeak = entry.phonetic || entry.word;
-              const utter = new SpeechSynthesisUtterance(textToSpeak);
-              utter.lang = entry.phonetic ? "en" : entry.language_code;
-              window.speechSynthesis.speak(utter);
+              if (loadingTTS) return;
+              setLoadingTTS(true);
+              const text = entry.phonetic || entry.word;
+              const audio = new Audio(`/api/tts?text=${encodeURIComponent(text)}`);
+              
+              audio.oncanplaythrough = () => {
+                audio.play().catch((err) => {
+                  console.error("Playback error:", err);
+                  setLoadingTTS(false);
+                });
+              };
+
+              audio.onended = () => setLoadingTTS(false);
+              audio.onerror = (e) => {
+                console.error("Audio loading error:", e);
+                setLoadingTTS(false);
+              };
             }}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#C3C8C1]/60 bg-white px-4 py-1.5 text-sm font-semibold text-[#1B3022] hover:bg-[#E5F0E8] transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#C3C8C1]/60 bg-white px-4 py-1.5 text-sm font-semibold text-[#1B3022] hover:bg-[#E5F0E8] transition-colors disabled:opacity-50"
           >
-            🔊 Pronounce
+            🔊 {loadingTTS ? "..." : "Pronounce"}
           </button>
         )}
         <Badge className="bg-[#F0EEE9] text-[#434843]">{entry.source === "community" ? "Community" : "Archive"}</Badge>

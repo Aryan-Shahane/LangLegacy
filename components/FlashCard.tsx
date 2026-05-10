@@ -18,6 +18,7 @@ export default function FlashCard({
   onMissed: () => void;
 }) {
   const [flipped, setFlipped] = useState(false);
+  const [loadingTTS, setLoadingTTS] = useState(false);
   const { toggle, hasAudio } = useExclusivePlayback(entry.audio_url);
 
   useEffect(() => {
@@ -27,10 +28,18 @@ export default function FlashCard({
         return () => window.clearTimeout(t);
       } else {
         const t = window.setTimeout(() => {
-          const textToSpeak = entry.phonetic || entry.word;
-          const utter = new SpeechSynthesisUtterance(textToSpeak);
-          utter.lang = entry.phonetic ? "en" : entry.language_code;
-          window.speechSynthesis.speak(utter);
+          setLoadingTTS(true);
+          const text = entry.phonetic || entry.word;
+          const audio = new Audio(`/api/tts?text=${encodeURIComponent(text)}`);
+          
+          audio.oncanplaythrough = () => {
+            audio.play().catch((err) => {
+              console.error("Autoplay error:", err);
+              setLoadingTTS(false);
+            });
+          };
+          audio.onended = () => setLoadingTTS(false);
+          audio.onerror = () => setLoadingTTS(false);
         }, 120);
         return () => window.clearTimeout(t);
       }
@@ -83,16 +92,27 @@ export default function FlashCard({
                 <AudioPlayer audio_url={entry.audio_url} />
               ) : (
                 <button
+                  key="tts-btn"
                   type="button"
+                  disabled={loadingTTS}
                   onClick={() => {
-                    const textToSpeak = entry.phonetic || entry.word;
-                    const utter = new SpeechSynthesisUtterance(textToSpeak);
-                    utter.lang = entry.phonetic ? "en" : entry.language_code;
-                    window.speechSynthesis.speak(utter);
+                    if (loadingTTS) return;
+                    setLoadingTTS(true);
+                    const text = entry.phonetic || entry.word;
+                    const audio = new Audio(`/api/tts?text=${encodeURIComponent(text)}`);
+                    
+                    audio.oncanplaythrough = () => {
+                      audio.play().catch((err) => {
+                        console.error("Manual playback error:", err);
+                        setLoadingTTS(false);
+                      });
+                    };
+                    audio.onended = () => setLoadingTTS(false);
+                    audio.onerror = () => setLoadingTTS(false);
                   }}
-                  className="mx-auto mt-2 inline-flex w-fit items-center gap-1.5 rounded-full border border-[#C3C8C1]/60 bg-white px-4 py-1.5 text-sm font-semibold text-[#1B3022] hover:bg-[#E5F0E8] transition-colors"
+                  className="mx-auto mt-2 inline-flex w-fit items-center gap-1.5 rounded-full border border-[#C3C8C1]/60 bg-white px-4 py-1.5 text-sm font-semibold text-[#1B3022] hover:bg-[#E5F0E8] transition-colors disabled:opacity-50"
                 >
-                  🔊 Pronounce
+                  🔊 {loadingTTS ? "..." : "Pronounce"}
                 </button>
               )}
             </div>
