@@ -14,6 +14,7 @@ export default function DictionaryEntry({
   onTranslationSaved,
 }: {
   entry: Entry;
+  canModerate?: boolean;
   onTranslationSaved?: () => void;
 }) {
   const [adding, setAdding] = useState(false);
@@ -60,6 +61,22 @@ export default function DictionaryEntry({
     }
   };
 
+  const deleteEntry = async () => {
+    if (!confirm("Are you sure you want to delete this word?")) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/entries/${encodeURIComponent(entry._id)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete");
+      onTranslationSaved?.();
+    } catch (e) {
+      alert("Could not delete entry.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <article className="panel space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#C3C8C1]/40 pb-3">
@@ -68,6 +85,18 @@ export default function DictionaryEntry({
           <p className="text-lg text-[#1B1C19]">{entry.translation}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {canModerate && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+              onClick={() => void deleteEntry()}
+              disabled={busy}
+            >
+              Delete
+            </Button>
+          )}
           <ReportModal compact contentType="entry" contentId={entry._id} languageCode={entry.language_code} />
         </div>
       </div>
@@ -126,7 +155,22 @@ export default function DictionaryEntry({
       ) : null}
 
       <div className="flex flex-wrap items-center gap-3">
-        <AudioPlayer audio_url={entry.audio_url} />
+        {entry.audio_url ? (
+          <AudioPlayer audio_url={entry.audio_url} />
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              const textToSpeak = entry.phonetic || entry.word;
+              const utter = new SpeechSynthesisUtterance(textToSpeak);
+              utter.lang = entry.language_code;
+              window.speechSynthesis.speak(utter);
+            }}
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#C3C8C1]/60 bg-white px-4 py-1.5 text-sm font-semibold text-[#1B3022] hover:bg-[#E5F0E8] transition-colors"
+          >
+            🔊 Pronounce
+          </button>
+        )}
         <Badge className="bg-[#F0EEE9] text-[#434843]">{entry.source === "community" ? "Community" : "Archive"}</Badge>
       </div>
 

@@ -17,6 +17,7 @@ export default function DictionaryClient({ languageCode }: { languageCode: strin
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [canModerate, setCanModerate] = useState(false);
   const nextOffsetRef = useRef(0);
 
   useEffect(() => {
@@ -62,6 +63,14 @@ export default function DictionaryClient({ languageCode }: { languageCode: strin
   }, [fetchSlice]);
 
   useEffect(() => {
+    // Fetch user role
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data: { can_moderate?: boolean }) => {
+        setCanModerate(!!data.can_moderate);
+      })
+      .catch(() => {});
+      
     // eslint-disable-next-line react-hooks/set-state-in-effect -- dictionary loads from API when language/search changes
     void resetAndLoadFirst();
   }, [resetAndLoadFirst]);
@@ -120,7 +129,7 @@ export default function DictionaryClient({ languageCode }: { languageCode: strin
       {!loadingInitial && entries.length > 0 ? (
         <div className="grid gap-3">
           {entries.map((entry) => (
-            <DictionaryEntry key={entry._id} entry={entry} onTranslationSaved={resetAndLoadFirst} />
+            <DictionaryEntry key={entry._id} entry={entry} canModerate={canModerate} onTranslationSaved={resetAndLoadFirst} />
           ))}
         </div>
       ) : null}

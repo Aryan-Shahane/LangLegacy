@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { ExtractedEntry } from "@/lib/types";
+import { saveDocument } from "@/lib/cloudant";
 
 /* ─── stop words ─── */
 
@@ -199,12 +200,17 @@ Rules:
 
 export async function POST(req: NextRequest) {
   try {
-    const { transcript, language_name: languageName, language_code: languageCode } =
-      (await req.json()) as {
-        transcript?: string;
-        language_name?: string;
-        language_code?: string;
-      };
+    const {
+      transcript,
+      language_name: languageName,
+      language_code: languageCode,
+      audio_url: audioUrl,
+    } = (await req.json()) as {
+      transcript?: string;
+      language_name?: string;
+      language_code?: string;
+      audio_url?: string;
+    };
 
     if (!transcript || !languageName || !languageCode) {
       return NextResponse.json({ error: "Missing transcript/language fields" }, { status: 400 });
@@ -282,6 +288,22 @@ export async function POST(req: NextRequest) {
         example_sentence: transcript.length > 200 ? transcript.slice(0, 200) + "…" : transcript,
         example_translation: "",
       }));
+    }
+
+    // Save a single transcript document to Cloudant (audio lives here, NOT on individual entries)
+    if (audioUrl) {
+      try {
+        await saveDocument("entries", {
+          type: "transcript",
+          language_code: languageCode,
+          audio_url: audioUrl,
+          transcript_text: transcript,
+          created_at: new Date().toISOString(),
+        });
+        console.log("Saved transcript document to Cloudant with audio_url:", audioUrl);
+      } catch (err) {
+        console.warn("Failed to save transcript document to Cloudant:", err);
+      }
     }
 
     return NextResponse.json({
