@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "whisper": "python whisper_server.py"
+    "whisper": "python whisper_server.py",
+    "check:google-tts": "node scripts/check-google-tts.mjs"
   },
   "keywords": [],
   "author": "",

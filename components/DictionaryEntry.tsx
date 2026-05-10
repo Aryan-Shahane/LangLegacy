@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { entryHasMeaningfulTranslation } from "@/lib/entryTranslation";
+import { playEntryPronunciation } from "@/lib/playEntryPronunciation";
 import type { Entry } from "@/lib/types";
 
 export default function DictionaryEntry({
@@ -22,6 +23,7 @@ export default function DictionaryEntry({
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [patchError, setPatchError] = useState<string | null>(null);
+  const [pronounceBusy, setPronounceBusy] = useState(false);
 
   const created = entry.created_at
     ? new Date(entry.created_at).toLocaleString(undefined, {
@@ -164,15 +166,20 @@ export default function DictionaryEntry({
         ) : (
           <button
             type="button"
-            onClick={() => {
-              const textToSpeak = entry.phonetic || entry.word;
-              const utter = new SpeechSynthesisUtterance(textToSpeak);
-              utter.lang = entry.phonetic ? "en" : entry.language_code;
-              window.speechSynthesis.speak(utter);
+            disabled={pronounceBusy}
+            onClick={async () => {
+              setPronounceBusy(true);
+              try {
+                await playEntryPronunciation(entry);
+              } catch {
+                /* optional: toast — browser TTS may still have run */
+              } finally {
+                setPronounceBusy(false);
+              }
             }}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#C3C8C1]/60 bg-white px-4 py-1.5 text-sm font-semibold text-[#1B3022] hover:bg-[#E5F0E8] transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#C3C8C1]/60 bg-white px-4 py-1.5 text-sm font-semibold text-[#1B3022] transition-colors hover:bg-[#E5F0E8] disabled:cursor-wait disabled:opacity-70"
           >
-            🔊 Pronounce
+            {pronounceBusy ? "…" : "🔊"} {pronounceBusy ? "Playing…" : "Pronounce"}
           </button>
         )}
         <Badge className="bg-[#F0EEE9] text-[#434843]">{entry.source === "community" ? "Community" : "Archive"}</Badge>

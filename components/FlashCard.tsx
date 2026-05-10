@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useExclusivePlayback } from "@/hooks/useExclusivePlayback";
 import AudioPlayer from "@/components/AudioPlayer";
 import { Button } from "@/components/ui/button";
+import { playEntryPronunciation } from "@/lib/playEntryPronunciation";
 import type { Entry } from "@/lib/types";
 
 export default function FlashCard({
@@ -18,6 +19,7 @@ export default function FlashCard({
   onMissed: () => void;
 }) {
   const [flipped, setFlipped] = useState(false);
+  const [pronounceBusy, setPronounceBusy] = useState(false);
   const { toggle, hasAudio } = useExclusivePlayback(entry.audio_url);
 
   useEffect(() => {
@@ -27,10 +29,7 @@ export default function FlashCard({
         return () => window.clearTimeout(t);
       } else {
         const t = window.setTimeout(() => {
-          const textToSpeak = entry.phonetic || entry.word;
-          const utter = new SpeechSynthesisUtterance(textToSpeak);
-          utter.lang = entry.phonetic ? "en" : entry.language_code;
-          window.speechSynthesis.speak(utter);
+          void playEntryPronunciation(entry);
         }, 120);
         return () => window.clearTimeout(t);
       }
@@ -84,15 +83,18 @@ export default function FlashCard({
               ) : (
                 <button
                   type="button"
-                  onClick={() => {
-                    const textToSpeak = entry.phonetic || entry.word;
-                    const utter = new SpeechSynthesisUtterance(textToSpeak);
-                    utter.lang = entry.phonetic ? "en" : entry.language_code;
-                    window.speechSynthesis.speak(utter);
+                  disabled={pronounceBusy}
+                  onClick={async () => {
+                    setPronounceBusy(true);
+                    try {
+                      await playEntryPronunciation(entry);
+                    } finally {
+                      setPronounceBusy(false);
+                    }
                   }}
-                  className="mx-auto mt-2 inline-flex w-fit items-center gap-1.5 rounded-full border border-[#C3C8C1]/60 bg-white px-4 py-1.5 text-sm font-semibold text-[#1B3022] hover:bg-[#E5F0E8] transition-colors"
+                  className="mx-auto mt-2 inline-flex w-fit items-center gap-1.5 rounded-full border border-[#C3C8C1]/60 bg-white px-4 py-1.5 text-sm font-semibold text-[#1B3022] transition-colors hover:bg-[#E5F0E8] disabled:cursor-wait disabled:opacity-70"
                 >
-                  🔊 Pronounce
+                  {pronounceBusy ? "… Playing…" : "🔊 Pronounce"}
                 </button>
               )}
             </div>
