@@ -52,8 +52,11 @@ export default function ChatRoom({
         const payload = JSON.parse(event.data) as Message[];
         setMessages((prev) => {
           const map = new Map(prev.map((m) => [m._id, m]));
-          payload.forEach((p) => map.set(p._id, p));
-          return Array.from(map.values()).sort((a, b) => a.created_at.localeCompare(b.created_at));
+          for (const p of payload) {
+            if (p && typeof p._id === "string") map.set(p._id, p);
+          }
+          const ts = (m: Message) => (typeof m.created_at === "string" ? m.created_at : "");
+          return Array.from(map.values()).sort((a, b) => ts(a).localeCompare(ts(b)));
         });
       } catch {
         // ignore malformed event
@@ -112,7 +115,7 @@ export default function ChatRoom({
         <MessageBubble
           key={message._id}
           message={message}
-          isOwn={message.author_name.toLowerCase() === "you"}
+          isOwn={(message.author_name ?? "").trim().toLowerCase() === "you"}
           onReport={async (payload) => {
             await fetch(`/api/messages/${message._id}/report`, {
               method: "POST",

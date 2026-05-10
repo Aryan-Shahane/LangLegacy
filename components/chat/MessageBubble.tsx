@@ -12,13 +12,17 @@ export default function MessageBubble({
   isOwn?: boolean;
   onReport: (payload: { reason: ReportReason; details: string }) => Promise<void>;
 }) {
-  const time = new Date(message.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const created = message.created_at ? new Date(message.created_at) : null;
+  const time =
+    created && !Number.isNaN(created.getTime())
+      ? created.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+      : "";
 
   return (
     <div className={`group flex ${isOwn ? "justify-end" : "justify-start"}`}>
       <div className={`max-w-[82%] space-y-1 ${isOwn ? "items-end" : "items-start"}`}>
         <div className={`flex items-center gap-2 text-[11px] ${isOwn ? "justify-end text-[#7F5D54]" : "text-[#6F746E]"}`}>
-          <span className="font-medium">{isOwn ? "You" : message.author_name}</span>
+          <span className="font-medium">{isOwn ? "You" : message.author_name?.trim() || "Speaker"}</span>
           <span>{time}</span>
         </div>
         <div
