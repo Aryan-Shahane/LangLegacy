@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { findDocuments, saveDocument } from "@/lib/cloudant";
 import { requireSession } from "@/lib/auth";
+import { coerceMessage } from "@/lib/messageCoercion";
 import type { Message } from "@/lib/types";
 import { broadcast } from "@/lib/streamManager";
 import { MOCK_MESSAGES } from "@/lib/mock/chatroomMockData";
@@ -26,8 +27,10 @@ export async function GET(
       docs = MOCK_MESSAGES[roomId] || [];
     }
 
-    docs.sort((a, b) => a.created_at.localeCompare(b.created_at));
-    return NextResponse.json(docs.slice(-50));
+    const normalized = (docs as unknown as Record<string, unknown>[]).map((d) => coerceMessage(d));
+    const ts = (m: Message) => (typeof m.created_at === "string" ? m.created_at : "");
+    normalized.sort((a, b) => ts(a).localeCompare(ts(b)));
+    return NextResponse.json(normalized.slice(-50));
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to fetch messages" },
@@ -61,14 +64,21 @@ export async function POST(
       created_at: new Date().toISOString(),
     };
     
-    let saved = message;
+    let saved: Message;
     try {
-      saved = await saveDocument("messages", message as unknown as Record<string, unknown>) as Message;
+      saved = (await saveDocument("messages", message as unknown as Record<string, unknown>)) as unknown as Message;
     } catch (dbError) {
-      console.warn("Cloudant unreachable, faking message save");
+      console.warn("Message save failed (Cloudant unreachable or misconfigured):", dbError);
+      return NextResponse.json(
+        {
+          error:
+            "Could not save this message to the archive. Check Cloudant credentials and connectivity so everyone can load the thread.",
+        },
+        { status: 503 }
+      );
     }
 
-    // Fan out via SSE
+    // Fan out via SSE only after durable write — all connected clients see the same payload.
     broadcast(roomId, saved);
 
     return NextResponse.json(saved, { status: 201 });

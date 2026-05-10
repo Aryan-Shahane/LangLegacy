@@ -66,6 +66,18 @@ async function cloudantFetch(input: RequestInfo | URL, init: RequestInit = {}): 
   });
 }
 
+/** CouchDB/Cloudant often responds to POST/PUT with `{ ok, id, rev }` only — merge so callers receive the full document. */
+function mergeWriteResponse(doc: Json, result: unknown): Json {
+  if (!result || typeof result !== "object") {
+    return doc;
+  }
+  const r = result as Record<string, unknown>;
+  if (r.ok === true && typeof r.id === "string" && typeof r.rev === "string") {
+    return { ...doc, _id: r.id, _rev: r.rev } as Json;
+  }
+  return result as Json;
+}
+
 async function ensureDatabase(db: string): Promise<void> {
   const { base } = cloudantConfig();
   const res = await cloudantFetch(`${base}/${db}`, {
@@ -138,7 +150,8 @@ export async function saveDocument(db: string, doc: Json): Promise<Json> {
   if (!res.ok) {
     throw new Error(`Cloudant save failed: ${res.status}`);
   }
-  return (await res.json()) as Json;
+  const result = await res.json();
+  return mergeWriteResponse(doc, result);
 }
 
 export async function getDocument(db: string, id: string): Promise<Json | null> {
@@ -180,5 +193,6 @@ export async function putDocument(db: string, id: string, doc: Json): Promise<Js
   if (!res.ok) {
     throw new Error(`Cloudant put document failed: ${res.status}`);
   }
-  return (await res.json()) as Json;
+  const result = await res.json();
+  return mergeWriteResponse(doc, result);
 }

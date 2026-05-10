@@ -6,6 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Message, Room } from "@/lib/types";
 
+function sortMessagesByTime(list: Message[]): Message[] {
+  const ts = (m: Message) => (typeof m.created_at === "string" ? m.created_at : "");
+  return [...list].sort((a, b) => ts(a).localeCompare(ts(b)));
+}
+
 export default function ChatRoom({
   room,
   languageCode,
@@ -53,10 +58,18 @@ export default function ChatRoom({
         setMessages((prev) => {
           const map = new Map(prev.map((m) => [m._id, m]));
           for (const p of payload) {
-            if (p && typeof p._id === "string") map.set(p._id, p);
+            if (!p || typeof p._id !== "string") continue;
+            const body = (typeof p.body === "string" ? p.body : "").trim();
+            // SSE often arrives before POST replaces the optimistic row — drop matching temp_* so we do not show two bubbles.
+            for (const [id, m] of [...map.entries()]) {
+              if (typeof id === "string" && id.startsWith("temp_")) {
+                const optimisticBody = (typeof m.body === "string" ? m.body : "").trim();
+                if (optimisticBody === body) map.delete(id);
+              }
+            }
+            map.set(p._id, p);
           }
-          const ts = (m: Message) => (typeof m.created_at === "string" ? m.created_at : "");
-          return Array.from(map.values()).sort((a, b) => ts(a).localeCompare(ts(b)));
+          return sortMessagesByTime(Array.from(map.values()));
         });
       } catch {
         // ignore malformed event
@@ -101,7 +114,12 @@ export default function ChatRoom({
       }
 
       const realMessage = (await res.json()) as Message;
-      setMessages((prev) => prev.map((m) => (m._id === tempId ? realMessage : m)));
+      setMessages((prev) => {
+        const map = new Map(prev.map((m) => [m._id, m]));
+        map.delete(tempId);
+        map.set(realMessage._id, realMessage);
+        return sortMessagesByTime(Array.from(map.values()));
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send message.");
     } finally {
@@ -109,11 +127,18 @@ export default function ChatRoom({
     }
   };
 
-  const content = useMemo(
-    () =>
-      messages.map((message) => (
+  const content = useMemo(() => {
+    const seen = new Set<string>();
+    return messages.map((message, index) => {
+      const base = typeof message._id === "string" && message._id.length > 0 ? message._id : `row-${index}`;
+      let key = base;
+      if (seen.has(key)) {
+        key = `${base}__${index}`;
+      }
+      seen.add(key);
+      return (
         <MessageBubble
-          key={message._id}
+          key={key}
           message={message}
           isOwn={(message.author_name ?? "").trim().toLowerCase() === "you"}
           onReport={async (payload) => {
@@ -124,9 +149,9 @@ export default function ChatRoom({
             });
           }}
         />
-      )),
-    [messages, languageCode]
-  );
+      );
+    });
+  }, [messages, languageCode]);
 
   return (
     <div className="flex h-[calc(100vh-200px)] min-h-[500px] max-h-[800px] flex-col overflow-hidden rounded-2xl border border-[#C3C8C1]/35 bg-[#F5F3EE]">

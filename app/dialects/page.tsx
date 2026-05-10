@@ -3,8 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
+import TopBar from "@/components/TopBar";
 import { Volume2, Search, Globe, Users, BookOpen } from "lucide-react";
 
 type Language = {

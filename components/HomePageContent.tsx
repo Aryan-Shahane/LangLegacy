@@ -43,7 +43,7 @@ export default function HomePageContent() {
   const stats = useLangStats();
   return (
     <div className="bg-[#F5F4F0] text-[#1B1C19] min-h-screen font-sans">
-      <TopBar activeTab="dictionary" />
+      <TopBar activeTab="home" />
 
       {/* Hero Section */}
       <section className="relative flex h-[600px] flex-col items-center justify-center overflow-hidden px-6 text-center md:h-[700px] md:px-12">

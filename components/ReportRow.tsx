@@ -23,7 +23,7 @@ function openInArchiveHref(report: ReportQueueItem): string {
   if (ct === "post") return `/${lc}?tab=community&section=forum`;
   if (ct === "poem") return `/${lc}?tab=community&section=poetry`;
   if (ct === "story") return `/${lc}?tab=community&section=storytelling`;
-  if (ct === "message") return `/${lc}?tab=community&section=chat`;
+  if (ct === "message") return `/${lc}?tab=chatrooms`;
   return `/${lc}`;
 }
 

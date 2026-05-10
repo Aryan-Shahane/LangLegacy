@@ -6,11 +6,12 @@ import { useEffect, useState } from "react";
 import NotificationsBell from "@/components/NotificationsBell";
 import { cn } from "@/lib/utils";
 
-/** Landing `/`: Dictionary + Community + Learn. */
+/** Landing `/`: Dictionary (dialects) + Community + Learn + Chatrooms. */
 const LANDING_TABS = [
   { id: "dictionary", label: "Dictionary" },
   { id: "community", label: "Community" },
   { id: "learn", label: "Learn" },
+  { id: "chatrooms", label: "Chatrooms" },
 ] as const;
 
 /** Per-language: Dictionary · Community hub · Learn · Chatrooms. */
@@ -83,6 +84,12 @@ export default function TopBar({ activeTab, languageCode }: Props) {
 
   const tabs = languageCode ? LANGUAGE_TABS : LANDING_TABS;
 
+  const isTabActive = (tabId: string) => {
+    if (migratedActive === tabId) return true;
+    if (tabId === "dictionary" && pathname === "/dialects") return true;
+    return false;
+  };
+
   return (
     <header className="sticky top-0 z-40 border-b border-[#C3C8C1]/20 bg-[#1B3022] text-[#D0E9D4]">
       <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between gap-4 px-6 py-4">
@@ -95,7 +102,7 @@ export default function TopBar({ activeTab, languageCode }: Props) {
               let href: string;
               if (languageCode) {
                 if (tab.id === "dictionary") {
-                  href = `/${languageCode}`;
+                  href = "/dialects";
                 } else if (tab.id === "community") {
                   href = `/${languageCode}?tab=community&section=forum`;
                 } else if (tab.id === "chatrooms") {
@@ -104,9 +111,11 @@ export default function TopBar({ activeTab, languageCode }: Props) {
                   href = `/${languageCode}?tab=${tab.id}`;
                 }
               } else if (tab.id === "dictionary") {
-                href = "/#dictionary";
+                href = "/dialects";
               } else if (tab.id === "community") {
                 href = `/mi?tab=community&section=forum`;
+              } else if (tab.id === "chatrooms") {
+                href = `/mi?tab=chatrooms`;
               } else {
                 href = `/mi?tab=learn`;
               }
@@ -116,7 +125,7 @@ export default function TopBar({ activeTab, languageCode }: Props) {
                   href={href}
                   className={cn(
                     "rounded-full px-4 py-1.5 text-sm font-medium transition-all active:scale-[0.98]",
-                    migratedActive === tab.id ? "bg-[#B4CDB8] text-[#0B2013]" : "text-[#D0E9D4] hover:bg-[#30483A]"
+                    isTabActive(tab.id) ? "bg-[#B4CDB8] text-[#0B2013]" : "text-[#D0E9D4] hover:bg-[#30483A]"
                   )}
                 >
                   {tab.label}

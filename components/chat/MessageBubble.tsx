@@ -22,7 +22,9 @@ export default function MessageBubble({
     <div className={`group flex ${isOwn ? "justify-end" : "justify-start"}`}>
       <div className={`max-w-[82%] space-y-1 ${isOwn ? "items-end" : "items-start"}`}>
         <div className={`flex items-center gap-2 text-[11px] ${isOwn ? "justify-end text-[#7F5D54]" : "text-[#6F746E]"}`}>
-          <span className="font-medium">{isOwn ? "You" : message.author_name?.trim() || "Speaker"}</span>
+          {isOwn || message.author_name?.trim() ? (
+            <span className="font-medium">{isOwn ? "You" : message.author_name?.trim()}</span>
+          ) : null}
           <span>{time}</span>
         </div>
         <div
@@ -32,7 +34,7 @@ export default function MessageBubble({
               : "rounded-tl-md border-[#C3C8C1]/35 bg-[#FFFFFF]/90 text-[#1B1C19]"
           }`}
         >
-          {message.body}
+          {(message.body ?? "").trim() || <span className="opacity-60">…</span>}
         </div>
         <div className={`${isOwn ? "flex justify-end" : "flex justify-start"} opacity-0 transition-opacity group-hover:opacity-100`}>
           <ReportModal compact onSubmit={onReport} />

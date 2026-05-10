@@ -25,9 +25,11 @@ export default function TabNav({
         <Link
           key={tab.id}
           href={
-            tab.id === "community"
-              ? `/${languageCode}?tab=community&section=forum`
-              : `/${languageCode}?tab=${tab.id}`
+            tab.id === "dictionary"
+              ? "/dialects"
+              : tab.id === "community"
+                ? `/${languageCode}?tab=community&section=forum`
+                : `/${languageCode}?tab=${tab.id}`
           }
           className={cn(
             "rounded-full px-4 py-1.5 text-sm font-medium transition-all",
