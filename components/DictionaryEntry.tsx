@@ -11,6 +11,7 @@ import type { Entry } from "@/lib/types";
 
 export default function DictionaryEntry({
   entry,
+  canModerate,
   onTranslationSaved,
 }: {
   entry: Entry;
