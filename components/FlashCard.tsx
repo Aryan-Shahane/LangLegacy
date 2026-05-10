@@ -29,7 +29,8 @@ export default function FlashCard({
         return () => window.clearTimeout(t);
       } else {
         const t = window.setTimeout(() => {
-          void playEntryPronunciation(entry);
+          setPronounceBusy(true);
+          void playEntryPronunciation(entry).finally(() => setPronounceBusy(false));
         }, 120);
         return () => window.clearTimeout(t);
       }
@@ -82,6 +83,7 @@ export default function FlashCard({
                 <AudioPlayer audio_url={entry.audio_url} />
               ) : (
                 <button
+                  key="tts-btn"
                   type="button"
                   disabled={pronounceBusy}
                   onClick={async () => {
